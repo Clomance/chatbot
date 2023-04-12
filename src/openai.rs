@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 
 
-const API_KEY:&'static str="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"; // 
+const API_KEY:&'static str="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";
 
 // "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"
 
@@ -14,19 +14,8 @@ const API_KEY:&'static str="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"
 pub struct OpenAI;
 
 impl OpenAI{
-    pub fn send_prompt(message:&str)->String{
+    pub fn send_prompt(prompt:&str)->String{
         let url="https://api.openai.com/v1/completions";
-
-        // "curie:ft-personal-2023-04-09-12-01-05"
-
-        let message=message.replace("\"","\'");
-
-        let prompt=format!(
-            "You are a russian chat assistant of Добрый company.\
-            This company sells different kinds of juice.\
-            You answer people questions and tell them about it's products if they ask for them.\n\n\
-            The first question:{message}\nYour answer:"
-        );
 
         let payload=json!({
             "model":"text-davinci-003",
@@ -156,7 +145,31 @@ impl OpenAI{
 
         println!("{}",text);
     }
+
+    pub fn create_embedding(input:&str)->Vec<f32>{
+        let url="https://api.openai.com/v1/embeddings";
+
+        let payload=json!({
+            "input":input,
+            "model":"text-embedding-ada-002"
+        });
+
+        let response=attohttpc::post(url)
+            .timeout(Duration::from_secs(1200))
+            .header("Authorization",format!("Bearer {API_KEY}"))
+            .json(&payload).unwrap()
+            .send().unwrap();
+
+        let text=response.text_utf8().unwrap();
+
+        let payload:Value=serde_json::from_str(&text).unwrap();
+
+        let mut vectors=Vec::new();
+
+        for vector in payload["data"].as_array().unwrap()[0]["embedding"].as_array().unwrap(){
+            vectors.push(vector.as_f64().unwrap() as f32)
+        }
+
+        vectors
+    }
 }
-
-
-
