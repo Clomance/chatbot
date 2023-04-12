@@ -89,12 +89,12 @@ fn main(){
                         UpdateKind::Message(message)=>{
                             if let Some(text)=message.text(){
                                 if text.starts_with("запрос:")||text.starts_with("Запрос:"){
-                                    let text=&text[7..];
+                                    let text=&text[13..];
 
                                     let text=text.replace("\"","\'");
 
                                     let prompt=format!(
-                                        "A table name: 'example'.\
+                                        "A table name: 'employees'.\
                                         The first field: 'name', type is varchar.\
                                         The second field: 'sex', type is varchar, possible values are 'мужской' (male) 'женский' (female).\
                                         The third field: 'position' (means a job position), type is varchar.\
@@ -144,11 +144,11 @@ fn main(){
                                         bot.send_message(message.chat.id,"Ничего").await.unwrap();
                                     }
                                     else{
-                                        bot.send_message(message.chat.id,format!("{data}")).await.unwrap();
+                                        bot.send_message(message.chat.id,data).await.unwrap();
                                     }
                                 }
                                 else if text.starts_with("Поиск:")||text.starts_with("поиск:"){
-                                    let text=&text[6..];
+                                    let text=&text[11..];
                                     let vector=OpenAI::create_embedding(text);
 
                                     let mut max_similarity=0f32;
@@ -166,9 +166,15 @@ fn main(){
                                     }
 
                                     if max_similarity>0.70{
-                                        let text=samples[id].as_str().unwrap();
+                                        let file=samples[id].as_str().unwrap();
+                                        let file=file.replace("\"","\'");
 
-                                        bot.send_message(message.chat.id,text).await.unwrap();
+                                        let prompt=format!(
+                                            "{file}\nAdapt this text for this question:{text}\nYour answer:"
+                                        );
+    
+                                        let answer=OpenAI::send_prompt(&prompt);
+                                        bot.send_message(message.chat.id,answer).await.unwrap();
                                     }
                                     else{
                                         bot.send_message(message.chat.id,"Ничего").await.unwrap();
