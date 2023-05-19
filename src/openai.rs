@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use attohttpc::{MultipartBuilder, MultipartFile};
+use attohttpc::{MultipartBuilder, MultipartFile, body::{Text}};
 
 use serde_json::{Value, json};
 
@@ -8,28 +8,46 @@ use serde_json::{Value, json};
 
 const API_KEY:&'static str="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";
 
-// "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"
 
 
 pub struct OpenAI;
 
 impl OpenAI{
-    pub fn send_prompt(prompt:&str)->String{
+    pub fn send_prompt_text<S:AsRef<str>>(prompt:&S)->String{
+        Self::send_prompt_text_array(&[prompt]).pop().unwrap()
+    }
+
+    pub fn send_prompt_text_array<S:AsRef<str>>(prompts:&[S])->Vec<String>{
         let url="https://api.openai.com/v1/completions";
 
-        let payload=json!({
-            "model":"text-davinci-003",
-            "prompt":prompt,
-            "max_tokens":1024,
-            "best_of":3
-        });
+        let mut payload=format!("\
+            {{\
+                \"model\":\"text-davinci-003\",\
+                \"max_tokens\":1024,\
+                \"best_of\":3,\
+                \"prompt\":[\
+        ");
+
+        for prompt in prompts{
+            payload.push('\"');
+            payload.push_str(prompt.as_ref());
+            payload.push('\"');
+            payload.push(',');
+        }
+
+        if !prompts.is_empty(){
+            payload.pop();
+        }
+
+        payload.push_str("]}");
 
         println!("{payload}");
 
         let response=attohttpc::post(url)
             .timeout(Duration::from_secs(1200))
             .header("Authorization",format!("Bearer {API_KEY}"))
-            .json(&payload).unwrap()
+            .header("Content-Type","application/json;charset=utf-8")
+            .body(Text(payload))
             .connect_timeout(Duration::from_secs(1200))
             .read_timeout(Duration::from_secs(1200))
             .send().unwrap();
@@ -38,16 +56,28 @@ impl OpenAI{
 
         println!("{}",text);
 
-        let payload:Value=serde_json::from_str(&text).unwrap();
+        let mut payload:Value=serde_json::from_str(&text).unwrap();
 
-        let choices=&payload["choices"];
+        let usage=&payload["usage"];
+        println!("{usage:?}");
 
-        let message=choices[0]["text"].as_str().unwrap();
+        let choices=payload["choices"].as_array_mut().unwrap();
 
-        message.to_string()
+        let mut messages=Vec::with_capacity(choices.len());
+
+        for choice in choices{
+            match choice["text"].take(){
+                Value::String(message)=>{
+                    messages.push(message)
+                }
+                _=>{}
+            }
+        }
+
+        messages
     }
 
-    pub fn send_message(message:&str)->String{
+    pub fn send_chat(message:&str)->String{
         let url="https://api.openai.com/v1/chat/completions";
 
         let payload=json!({
@@ -149,20 +179,26 @@ impl OpenAI{
     pub fn create_embedding(input:&str)->Vec<f32>{
         let url="https://api.openai.com/v1/embeddings";
 
-        let payload=json!({
-            "input":input,
-            "model":"text-embedding-ada-002"
-        });
+        let payload=format!("\
+            {{\
+                \"model\":\"text-embedding-ada-002\",\
+                \"input\":\"{input}\"\
+            }}\
+        ");
 
         let response=attohttpc::post(url)
             .timeout(Duration::from_secs(1200))
             .header("Authorization",format!("Bearer {API_KEY}"))
-            .json(&payload).unwrap()
+            .header("Content-Type","application/json;charset=utf-8")
+            .body(Text(payload))
             .send().unwrap();
 
         let text=response.text_utf8().unwrap();
 
         let payload:Value=serde_json::from_str(&text).unwrap();
+
+        let usage=&payload["usage"];
+        println!("{usage:?}");
 
         let mut vectors=Vec::new();
 
