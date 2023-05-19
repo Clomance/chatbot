@@ -10,14 +10,18 @@ const API_KEY:&'static str="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"
 
 
 
+
+
+
+
 pub struct OpenAI;
 
 impl OpenAI{
-    pub fn send_prompt_text<S:AsRef<str>>(prompt:&S)->String{
-        Self::send_prompt_text_array(&[prompt]).pop().unwrap()
+    pub fn send_prompt<S:AsRef<str>>(prompt:&S)->String{
+        Self::send_prompt_array(&[prompt]).pop().unwrap()
     }
 
-    pub fn send_prompt_text_array<S:AsRef<str>>(prompts:&[S])->Vec<String>{
+    pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S])->Vec<String>{
         let url="https://api.openai.com/v1/completions";
 
         let mut payload=format!("\
