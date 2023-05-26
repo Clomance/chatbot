@@ -64,15 +64,44 @@ impl History{
     }
 
     pub fn push_question(&mut self,question:&str){
+        let tokens=gpt_encoder::Encoder::new().encode(question.to_string());
+
+        self.tokens+=tokens.len();
+        if self.tokens>HISTORY_TOKEN_LIMIT{
+            self.remove_old()
+        }
+
         self.text.push_str("U:");
         self.text.push_str(question);
         self.text.push_str("\\n");
     }
 
     pub fn push_answer(&mut self,answer:&str){
+        let tokens=gpt_encoder::Encoder::new().encode(answer.to_string());
+
+        self.tokens+=tokens.len();
+        if self.tokens>HISTORY_TOKEN_LIMIT{
+            self.remove_old()
+        }
+
         self.text.push_str("Y:");
         self.text.push_str(answer);
         self.text.push_str("\\n");
+    }
+
+    pub fn remove_old(&mut self){
+        let Some(start)=self.text.find("U:") else {return};
+
+        let Some(end)=self.text[start+2..].find("U:") else {return};
+
+        println!("{}",&self.text[start..end+2]);
+
+        let text=self.text[start..end].to_string();
+        let tokens=gpt_encoder::Encoder::new().encode(text);
+
+        self.tokens-=tokens.len();
+
+        self.text.replace_range(start..end,"");
     }
 }
 

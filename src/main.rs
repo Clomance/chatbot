@@ -15,9 +15,9 @@ use tokio::runtime::Builder;
 
 
 
-const BOT_TOKEN:&'static str="6058214276:AAFzDlKUr33C3In7jMM5cz6kUDqh85OzFqE";
+const BOT_TOKEN:&'static str="6113109632:AAEvVdzWlmyb8gYfZC8JyGDpDFzY_Dha2-c";
 
-// 6113109632:AAEvVdzWlmyb8gYfZC8JyGDpDFzY_Dha2-c
+
 
 fn main(){
     let bot=Bot::new(BOT_TOKEN);
@@ -55,23 +55,25 @@ fn main(){
                             let chat=chats.get(message.chat.id);
 
                             if let Some(text)=message.text(){
-                                let text=text.replace("\"","\'");
+                                let text=text.replace("\"","\'").replace("\n","\\n");
 
                                 let prompt=format!(
                                     "You are a russian chat teacher.\
-                                    You answer people questions.
+                                    You answer people questions.\
                                     This is your chat history with this user (U - User, Y - You):{}\\n\
-                                    This is a new question:{text}\\nYour answer:",
+                                    This is a new question:{text}\\nYour answer: (write only your answer)",
                                     chat.history()
                                 );
 
-                                // println!("{}",prompt);
+                                println!("{}",prompt);
 
-                                // let answer=OpenAI::send_prompt(&prompt);
-                                bot.send_message(message.chat.id,"hello").await.unwrap();
+                                let answer=OpenAI::send_prompt(&prompt);
+                                bot.send_message(message.chat.id,&answer).await.unwrap();
+
+                                println!("{}",answer);
 
                                 chat.history.push_question(&text);
-                                // chat.history.push_question(&answer);
+                                chat.history.push_answer(&answer.replace("\"","\'").replace("\n","\\n"));
                             }
                         }
                         _=>{}
