@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use attohttpc::{MultipartBuilder, MultipartFile, body::{Text}};
+use attohttpc::{MultipartBuilder, MultipartFile, body::Text};
 
 use serde_json::{Value, json};
 
@@ -15,7 +15,6 @@ pub struct OpenAI;
 impl OpenAI{
     pub fn send_prompt<S:AsRef<str>>(prompt:&S)->Option<String>{
         Self::send_prompt_array(&[prompt],1200).pop()
-        
     }
 
     pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S],max_tokens:u16)->Vec<String>{
@@ -42,8 +41,6 @@ impl OpenAI{
 
         payload.push_str("]}");
 
-        println!("{payload}");
-
         let response=attohttpc::post(url)
             .timeout(Duration::from_secs(1200))
             .header("Authorization",format!("Bearer {API_KEY}"))
@@ -54,8 +51,6 @@ impl OpenAI{
             .send().unwrap();
 
         let text=response.text_utf8().unwrap();
-
-        println!("{}",text);
 
         let mut payload:Value=serde_json::from_str(&text).unwrap();
 
