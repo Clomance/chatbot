@@ -13,13 +13,9 @@ const API_KEY:&'static str="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"
 pub struct OpenAI;
 
 impl OpenAI{
-    pub fn send_prompt<S:AsRef<str>>(prompt:&S)->String{
-        if let Some(answer)=Self::send_prompt_array(&[prompt],1200).pop(){
-            answer
-        }
-        else{
-            "Ошибка".to_string()
-        }
+    pub fn send_prompt<S:AsRef<str>>(prompt:&S)->Option<String>{
+        Self::send_prompt_array(&[prompt],1200).pop()
+        
     }
 
     pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S],max_tokens:u16)->Vec<String>{

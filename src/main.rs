@@ -150,8 +150,15 @@ async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
 
                 let prompt=chat.build_prompt(&text,mode_changed);
                 println!("{}",prompt);
-                let answer=OpenAI::send_prompt(&prompt);
-                bot.send_message(message.chat.id,&answer).await.unwrap();
+
+                let mut answer=OpenAI::send_prompt(&prompt);
+
+                while let None=answer{
+                    answer=OpenAI::send_prompt(&prompt);
+                }
+
+                let answer=answer.unwrap();
+
                 println!("{}",answer);
 
                 let answer=answer
