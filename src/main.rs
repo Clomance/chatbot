@@ -126,7 +126,12 @@ async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
 
                     _=>{
                         if text.starts_with("/start"){
-                            let _args=&text[7..];
+                            if let Some(args)=text.get(7..){
+                                println!("Args: {args}");
+                            }
+                            else{
+                                println!("No args")
+                            }
 
                             return;
                         }
