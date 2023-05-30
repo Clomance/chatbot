@@ -14,7 +14,7 @@ pub struct OpenAI;
 
 impl OpenAI{
     pub fn send_prompt<S:AsRef<str>>(prompt:&S)->String{
-        if let Some(answer)=Self::send_prompt_array(&[prompt]).pop(){
+        if let Some(answer)=Self::send_prompt_array(&[prompt],1200).pop(){
             answer
         }
         else{
@@ -22,14 +22,14 @@ impl OpenAI{
         }
     }
 
-    pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S])->Vec<String>{
+    pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S],max_tokens:u16)->Vec<String>{
         let url="https://api.openai.com/v1/completions";
 
         let mut payload=format!("\
             {{\
                 \"model\":\"text-davinci-003\",\
-                \"max_tokens\":2048,\
-                \"best_of\":3,\
+                \"max_tokens\":{max_tokens},\
+                \"best_of\":2,\
                 \"prompt\":[\
         ");
 
