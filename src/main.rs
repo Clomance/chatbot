@@ -55,24 +55,23 @@ fn main(){
                             let chat=chats.get(message.chat.id);
 
                             if let Some(text)=message.text(){
-                                let text=text.replace("\"","\'");
+                                let text=text.replace("\"","\'").replace("\n","\\n");
 
                                 let prompt=format!(
                                     "You are a russian chat teacher.\
                                     You answer people questions.\
                                     This is your chat history with this user (U - User, Y - You):{}\\n\
-                                    U:{text}\\nY:(write just our answer)",
+                                    This is a new question:{text}\\nYour answer:",
                                     chat.history()
                                 );
 
                                 println!("{}",prompt);
 
-                                let answer=OpenAI::send_prompt(&prompt);
-                                
-                                bot.send_message(message.chat.id,&answer).await.unwrap();
+                                // let answer=OpenAI::send_prompt(&prompt);
+                                bot.send_message(message.chat.id,"hello").await.unwrap();
 
                                 chat.history.push_question(&text);
-                                chat.history.push_question(&answer.replace("\n","\\n").replace("\"","\'"));
+                                // chat.history.push_question(&answer);
                             }
                         }
                         _=>{}

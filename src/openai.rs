@@ -6,11 +6,7 @@ use serde_json::{Value, json};
 
 
 
-const API_KEY:&'static str="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";
-
-
-
-
+const API_KEY:&'static str="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";
 
 
 
@@ -18,7 +14,12 @@ pub struct OpenAI;
 
 impl OpenAI{
     pub fn send_prompt<S:AsRef<str>>(prompt:&S)->String{
-        Self::send_prompt_array(&[prompt]).pop().unwrap()
+        if let Some(answer)=Self::send_prompt_array(&[prompt]).pop(){
+            answer
+        }
+        else{
+            "Ошибка".to_string()
+        }
     }
 
     pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S])->Vec<String>{
@@ -27,7 +28,7 @@ impl OpenAI{
         let mut payload=format!("\
             {{\
                 \"model\":\"text-davinci-003\",\
-                \"max_tokens\":1024,\
+                \"max_tokens\":2048,\
                 \"best_of\":3,\
                 \"prompt\":[\
         ");
@@ -65,7 +66,7 @@ impl OpenAI{
         let usage=&payload["usage"];
         println!("{usage:?}");
 
-        let choices=payload["choices"].as_array_mut().unwrap();
+        let Some(choices)=payload["choices"].as_array_mut() else {return Vec::new()};
 
         let mut messages=Vec::with_capacity(choices.len());
 
