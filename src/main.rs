@@ -151,13 +151,13 @@ async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
                 let prompt=chat.build_prompt(&text,mode_changed);
                 println!("{}",prompt);
 
-                let mut answer=OpenAI::send_prompt(&prompt);
-
-                while let None=answer{
-                    answer=OpenAI::send_prompt(&prompt);
-                }
-
-                let answer=answer.unwrap();
+                let answer=loop{
+                    let answer=OpenAI::send_prompt(&prompt);
+                    if let Some(answer)=answer{
+                        break answer
+                    }
+                    println!("Ошибка");
+                };
 
                 println!("{}",answer);
 
@@ -168,6 +168,8 @@ async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
                     .replace("\t","\\t");
 
                 chat.history().push_answer(&answer);
+
+                bot.send_message(message.chat.id,answer).await.unwrap();
             }
         }
         _=>{}
