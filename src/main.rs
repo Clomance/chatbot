@@ -24,11 +24,11 @@ const BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 fn main(){
     let bot=Bot::new(BOT_TOKEN);
 
-    let rt=Builder::new_current_thread()
+    let rt=Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(1024*1024)
-        .worker_threads(2)
-        .max_blocking_threads(2)
+        .worker_threads(4)
+        .max_blocking_threads(4)
         .build().unwrap();
 
     rt.block_on(
@@ -58,7 +58,8 @@ fn main(){
                 update_request.offset=last_update_id;
                 update_request.allowed_updates=Some(
                     vec![
-                        AllowedUpdate::Message
+                        AllowedUpdate::Message,
+                        AllowedUpdate::CallbackQuery
                     ]
                 );
 
@@ -78,9 +79,22 @@ fn main(){
 
 
 
-
 async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
     match update.kind{
+        UpdateKind::CallbackQuery(query)=>{
+            if let Some(message)=query.message{
+                if let Some(data)=query.data{
+                    let _chat=chats.get(message.chat.id);
+
+                    match data.as_str(){
+                        _=>{}
+                    }
+                }
+            }
+
+            let _=bot.answer_callback_query(query.id).await;
+        }
+
         UpdateKind::Message(message)=>{
             let chat=chats.get(message.chat.id);
 
