@@ -59,7 +59,7 @@ async fn main(){
 
         for update in updates{
             let update_id=update.id;
-            handle_updates(update,&bot,&mut chats).await;
+            handle_update(update,&bot,&mut chats).await;
             last_update_id=Some(update_id+1);
         }
     }
