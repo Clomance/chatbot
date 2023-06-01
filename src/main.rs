@@ -11,8 +11,6 @@ use teloxide_core::{
     types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update},
 };
 
-use tokio::runtime::Builder;
-
 use chat::ChatMode;
 
 
@@ -21,60 +19,50 @@ const BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 
 
 
-fn main(){
+#[tokio::main]
+async fn main(){
     let bot=Bot::new(BOT_TOKEN);
 
-    let rt=Builder::new_multi_thread()
-        .enable_all()
-        .thread_stack_size(1024*1024)
-        .worker_threads(4)
-        .max_blocking_threads(4)
-        .build().unwrap();
+    println!("openai bot start");
 
-    rt.block_on(
-        async{
-            println!("openai bot start");
+    let mut delete=bot.delete_my_commands();
+    delete.scope=Some(BotCommandScope::Default);
+    delete.await.unwrap();
 
-            let mut delete=bot.delete_my_commands();
-            delete.scope=Some(BotCommandScope::Default);
-            delete.await.unwrap();
+    bot.set_my_commands(
+        vec![
+            BotCommand::new("chatting","Простое общение"),
+            BotCommand::new("tutor","Репетитор"),
+            BotCommand::new("homework","Помощь с домашним задание"),
+            BotCommand::new("game","Игры"),
+            BotCommand::new("playground","Свобожный режим"),
+            BotCommand::new("settings","Настройки")
+        ]
+    ).await.unwrap();
 
-            bot.set_my_commands(
-                vec![
-                    BotCommand::new("chatting","Простое общение"),
-                    BotCommand::new("tutor","Репетитор"),
-                    BotCommand::new("homework","Помощь с домашним задание"),
-                    BotCommand::new("game","Игры"),
-                    BotCommand::new("playground","Свобожный режим"),
-                    BotCommand::new("settings","Настройки")
-                ]
-            ).await.unwrap();
+    let mut chats=Chats::new();
 
-            let mut chats=Chats::new();
+    let mut last_update_id=None;
+    loop{
+        let mut update_request=bot.get_updates();
+        update_request.offset=last_update_id;
+        update_request.allowed_updates=Some(
+            vec![
+                AllowedUpdate::Message,
+                AllowedUpdate::CallbackQuery
+            ]
+        );
 
-            let mut last_update_id=None;
-            loop{
-                let mut update_request=bot.get_updates();
-                update_request.offset=last_update_id;
-                update_request.allowed_updates=Some(
-                    vec![
-                        AllowedUpdate::Message,
-                        AllowedUpdate::CallbackQuery
-                    ]
-                );
+        let Ok(updates)=update_request.await else{
+            continue
+        };
 
-                let Ok(updates)=update_request.await else{
-                    continue
-                };
-
-                for update in updates{
-                    let update_id=update.id;
-                    handle_updates(update,&bot,&mut chats).await;
-                    last_update_id=Some(update_id+1);
-                }
-            }
+        for update in updates{
+            let update_id=update.id;
+            handle_updates(update,&bot,&mut chats).await;
+            last_update_id=Some(update_id+1);
         }
-    );
+    }
 }
 
 
@@ -188,4 +176,10 @@ async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
         }
         _=>{}
     }
+}
+
+
+
+fn create_tutor_menu(){
+    
 }
