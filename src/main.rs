@@ -2,13 +2,13 @@ mod chat;
 
 mod openai;
 
-use chat::Chats;
+use chat::{Chats, Chat};
 use openai::OpenAI;
 
 use teloxide_core::{
     Bot,
     requests::Requester,
-    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update},
+    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update, Message},
 };
 
 use chat::ChatMode;
@@ -67,7 +67,7 @@ async fn main(){
 
 
 
-async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
+async fn handle_update(update:Update,bot:&Bot,chats:&mut Chats){
     match update.kind{
         UpdateKind::CallbackQuery(query)=>{
             if let Some(message)=query.message{
@@ -86,94 +86,100 @@ async fn handle_updates(update:Update,bot:&Bot,chats:&mut Chats){
         UpdateKind::Message(message)=>{
             let chat=chats.get(message.chat.id);
 
-            if let Some(text)=message.text(){
-                let text=text
-                    .replace("\"","\\\"")
-                    .replace("\n","\\n")
-                    .replace("\r","\\r")
-                    .replace("\t","\\t");
-
-                let mode_changed;
-
-                match text.as_str(){
-                    "/chatting"=>{
-                        chat.set_mode(ChatMode::Chatting);
-                        mode_changed=true
-                    }
-
-                    "/tutor"=>{
-                        chat.set_mode(ChatMode::Tutor);
-                        mode_changed=true
-                    }
-
-                    "/homework"=>{
-                        chat.set_mode(ChatMode::Homework);
-                        mode_changed=true
-                    }
-
-                    "/game"=>{
-                        chat.set_mode(ChatMode::Game);
-                        mode_changed=true
-                    }
-
-                    "/playground"=>{
-                        chat.set_mode(ChatMode::Playground);
-                        return;
-                    }
-
-                    "/settings"=>{
-                        // chat.set_mode(ChatMode::Settings);
-                        return;
-                    }
-
-                    _=>{
-                        if text.starts_with("/start"){
-                            if let Some(args)=text.get(7..){
-                                println!("Args: {args}");
-                            }
-                            else{
-                                println!("No args")
-                            }
-
-                            return;
-                        }
-
-                        mode_changed=false
-                    }
-                }
-
-                if mode_changed{
-                    bot.send_message(message.chat.id,"Режим изменён, подождите немного.").await.unwrap();
-                    chat.history().push_question("");
-                }
-                else{
-                    chat.history().push_question(&text);
-                }
-
-                let prompt=chat.build_prompt(&text,mode_changed);
-                println!("{}",prompt);
-
-                let answer=loop{
-                    let answer=OpenAI::send_prompt(&prompt);
-                    if let Some(answer)=answer{
-                        break answer
-                    }
-                    println!("Ошибка");
-                };
-
-                println!("{}",answer);
-
-                let answer=answer
-                    .replace("\"","\\\"")
-                    .replace("\n","\\n")
-                    .replace("\r","\\r")
-                    .replace("\t","\\t");
-
-                chat.history().push_answer(&answer);
-
-                bot.send_message(message.chat.id,answer).await.unwrap();
-            }
+            handle_message(message,bot,chat).await;
         }
+
+        _=>{}
+    }
+}
+
+
+
+async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
+    if let Some(text)=message.text(){
+        if text.starts_with("/"){
+            if let Some(command)=text.get(1..){
+                handle_command(command,bot,chat).await;
+            }
+
+            return
+        }
+
+        let text=text
+            .replace("\"","\\\"")
+            .replace("\n","\\n")
+            .replace("\r","\\r")
+            .replace("\t","\\t");
+
+        // let mode_changed;
+
+        chat.history().push_question(&text);
+
+        let prompt=chat.build_prompt(&text,false);
+        println!("{}",prompt);
+
+        let answer=loop{
+            if let Some(answer)=OpenAI::send_prompt(&prompt){
+                break answer
+            }
+            println!("Ошибка");
+        };
+
+        println!("{}",answer);
+
+        let answer=answer
+            .replace("\"","\\\"")
+            .replace("\n","\\n")
+            .replace("\r","\\r")
+            .replace("\t","\\t");
+
+        chat.history().push_answer(&answer);
+
+        bot.send_message(message.chat.id,answer).await.unwrap();
+    }
+}
+
+
+
+async fn handle_command(command:&str,_bot:&Bot,chat:&mut Chat){
+    if command.starts_with("start"){
+        if let Some(args)=command.get(7..){
+            println!("Args: {args}");
+        }
+        else{
+            println!("No args")
+        }
+
+        return;
+    }
+
+    match command{
+        "chatting"=>{
+            chat.set_mode(ChatMode::Chatting);
+        }
+
+        "tutor"=>{
+            chat.set_mode(ChatMode::Tutor);
+        }
+
+        "homework"=>{
+            chat.set_mode(ChatMode::Homework);
+        }
+
+        "game"=>{
+            chat.set_mode(ChatMode::Game);
+        }
+
+        "playground"=>{
+            chat.set_mode(ChatMode::Playground);
+            return;
+        }
+
+        "settings"=>{
+            // chat.set_mode(ChatMode::Settings);
+            return;
+        }
+
         _=>{}
     }
 }
