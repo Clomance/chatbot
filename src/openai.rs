@@ -73,31 +73,34 @@ impl OpenAI{
         messages
     }
 
-    pub fn send_chat(message:&str)->String{
+    pub fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<String>{
         let url="https://api.openai.com/v1/chat/completions";
 
-        let payload=json!({
-            "model":"gpt-3.5-turbo",
-            "messages":[
-                {
-                    "role":"user",
-                    "content":"
-                        I want you to act as an assistant of Добрый company.
-                        This company sells different kinds of juice.
-                        You will consult people with a Добрый juice topic.
-                    "
-                },
-                {"role":"assistant","content":"Certainly!"},
-                {"role":"user","content":message}
-            ]
-        });
+        let mut payload=format!("\
+            {{\
+                \"model\":\"gpt-3.5-turbo\",\
+                \"max_tokens\":{max_tokens},\
+                \"messages\":[\
+        ");
+
+        for message in messages{
+            payload.push_str(message.as_ref());
+            payload.push(',');
+        }
+
+        if !messages.is_empty(){
+            payload.pop();
+        }
+
+        payload.push_str("]}");
 
         println!("{payload}");
 
         let response=attohttpc::post(url)
             .timeout(Duration::from_secs(1200))
             .header("Authorization",format!("Bearer {API_KEY}"))
-            .json(&payload).unwrap()
+            .header("Content-Type","application/json;charset=utf-8")
+            .body(Text(payload))
             .connect_timeout(Duration::from_secs(1200))
             .read_timeout(Duration::from_secs(1200))
             .send().unwrap();
@@ -108,11 +111,11 @@ impl OpenAI{
 
         let payload:Value=serde_json::from_str(&text).unwrap();
 
-        let choices=&payload["choices"];
+        let Some(choices)=payload["choices"].as_array() else {return None};
 
         let message=choices[0]["message"]["content"].as_str().unwrap();
 
-        message.to_string()
+        Some(message.to_string())
     }
 
     pub fn upload_file(path:&str,purpose:&str)->String{

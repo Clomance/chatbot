@@ -51,80 +51,66 @@ impl ChatFlags{
 
 
 pub struct History{
-    text:String,
-    lengths:Vec<usize>,
+    messages:Vec<String>,
     tokens:usize
 }
 
 impl History{
     pub fn new()->History{
         Self{
-            text:String::new(),
-            lengths:Vec::new(),
+            messages:Vec::new(),
             tokens:0usize
         }
     }
 
     pub fn is_empty(&self)->bool{
-        self.text.is_empty()
+        self.messages.is_empty()
     }
 
-    pub fn text(&self)->&str{
-        if self.text.is_empty(){
-            "Empty."
-        }
-        else{
-            &self.text
-        }
+    pub fn messages(&self)->&Vec<String>{
+        &self.messages
     }
 
     pub fn push_question(&mut self,question:&str){
-        let tokens=gpt_encoder::Encoder::new().encode(question.to_string());
+        let message=format!("{{\"role\":\"user\",\"content\":\"{}\"}}",question);
+
+        let tokens=gpt_encoder::Encoder::new().encode(message.clone());
 
         self.tokens+=tokens.len();
         self.remove_old();
 
-        self.lengths.push(question.len()+4);
-
-        self.text.push_str("M:");
-        self.text.push_str(question);
-        self.text.push_str("\\n");
+        self.messages.push(message);
     }
 
     pub fn push_answer(&mut self,answer:&str){
-        let tokens=gpt_encoder::Encoder::new().encode(answer.to_string());
+        let message=format!("{{\"role\":\"assistant\",\"content\":\"{}\"}}",answer);
+
+        let tokens=gpt_encoder::Encoder::new().encode(message.clone());
 
         self.tokens+=tokens.len();
         self.remove_old();
 
-        self.lengths.push(answer.len()+4);
-
-        self.text.push_str("Y:");
-        self.text.push_str(answer);
-        self.text.push_str("\\n");
+        self.messages.push(message);
     }
 
     pub fn remove_old(&mut self){
         while self.tokens>=HISTORY_TOKEN_LIMIT{
-            let len=self.lengths.remove(0);
+            let message=self.messages.remove(0);
 
-            let text=self.text[0..len].to_string();
-            let tokens=gpt_encoder::Encoder::new().encode(text);
+            let tokens=gpt_encoder::Encoder::new().encode(message);
 
             self.tokens-=tokens.len();
-
-            self.text.replace_range(0..len,"");
         }
     }
 
     pub fn clear(&mut self){
-        self.text.clear()
+        self.messages.clear()
     }
 }
 
 
 
-#[derive(Clone,Copy)]
+#[derive(Debug,Clone,Copy)]
 #[repr(usize)]
 pub enum ChatMode{
     Chatting,
@@ -184,106 +170,6 @@ impl Chat{
 
     pub fn set_mode(&mut self,mode:ChatMode){
         self.mode=mode
-    }
-
-    pub fn build_prompt(&mut self,message:&str,mode_changed:bool)->String{
-        match self.mode{
-            ChatMode::Chatting=>if mode_changed{
-               format!(
-                    "You are my friend.We're quite close.We're kids.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    Write something to continue chatting with me or start it.\
-                    The main language is russian.Y:",
-                    self.history().text()
-                )
-            }
-            else{
-                format!(
-                    "You are my friend.We're quite close.We're kids.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    M:{message}\\nY:",
-                    self.history().text()
-                )
-            }
-
-            ChatMode::Tutor=>if mode_changed{
-                format!(
-                    "You are a tutor for kids.\
-                    I am a kid.\
-                    You are up to teach me something I want.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    Write something to continue chatting with me or start it.\
-                    The main language is russian.Y:",
-                    self.history().text()
-                )
-            }
-            else{
-                format!(
-                    "You are a tutor for kids.\
-                    I am a kid.\
-                    You are up to teach me something I want.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    M:{message}\\nY:",
-                    self.history().text()
-                )
-            }
-
-            ChatMode::Homework=>if mode_changed{
-                format!(
-                    "You are a tutor for kids.\
-                    You help kids with homework.\
-                    I am a kid.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    Write something to continue chatting with me or start it.\
-                    The main language is russian.Y:",
-                    self.history().text()
-                )
-            }
-            else{
-                format!(
-                    "You are a tutor for kids.\
-                    You help kids with homework.\
-                    I am a kid.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    M:{message}\\nY:",
-                    self.history().text()
-                )
-            }
-
-            ChatMode::Game=>if mode_changed{
-                format!(
-                    "We gonna play games.\
-                    You suggest and play a chat game with me.\
-                    I am a kid.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    Write something to continue chatting with me or start it.\
-                    The main language is russian.Y:",
-                    self.history().text()
-                )
-            }
-            else{
-                format!(
-                    "We gonna play games.\
-                    You suggest and play a chat game with me.\
-                    I am a kid.\
-                    This is our chat history (M - Me,Y - You):{}\\n\
-                    M:{message}\\nY:",
-                    self.history().text()
-                )
-            }
-
-            ChatMode::Playground=>{
-                format!(
-                    "Chat history (M - Me,Y - You):{}\\n\
-                    M:{message}\\nY:",
-                    self.history().text()
-                )
-            }
-
-            ChatMode::Settings=>unreachable!(),
-
-            _=>unreachable!()
-        }
     }
 }
 

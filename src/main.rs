@@ -8,7 +8,7 @@ use openai::OpenAI;
 use teloxide_core::{
     Bot,
     requests::Requester,
-    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update, Message},
+    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update, Message, ChatId},
 };
 
 use chat::ChatMode;
@@ -99,7 +99,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
     if let Some(text)=message.text(){
         if text.starts_with("/"){
             if let Some(command)=text.get(1..){
-                handle_command(command,bot,chat).await;
+                handle_command(command,bot,message.chat.id,chat).await;
             }
 
             return
@@ -111,15 +111,44 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
             .replace("\r","\\r")
             .replace("\t","\\t");
 
-        // let mode_changed;
-
         chat.history().push_question(&text);
 
-        let prompt=chat.build_prompt(&text,false);
-        println!("{}",prompt);
+        let mode=chat.mode();
+
+        let mut messages=Vec::new();
+
+        println!("Mode: {:?}",mode);
+
+        match mode{
+            ChatMode::Chatting=>{
+                messages.push("{\"role\":\"user\",\"content\":\"You are my friend.We're quite close.We're kids.This is our chat history\"}")
+            }
+
+            ChatMode::Tutor=>{
+                messages.push("{\"role\":\"user\",\"content\":\"You are a tutor for kids.I am a kid.You are up to teach me something I want\"}")
+            }
+
+            ChatMode::Homework=>{
+                messages.push("{\"role\":\"user\",\"content\":\"You are a tutor for kids.You help kids with homework.I am a kid\"}")
+            }
+
+            ChatMode::Game=>{
+                messages.push("{\"role\":\"user\",\"content\":\"We gonna play games.You suggest and play a chat game with me.I am a kid\"}")
+            }
+
+            ChatMode::Playground=>{}
+
+            _=>return
+        }
+
+        let history=chat.history().messages();
+
+        for message in history.iter(){
+            messages.push(message)
+        }
 
         let answer=loop{
-            if let Some(answer)=OpenAI::send_prompt(&prompt){
+            if let Some(answer)=OpenAI::send_chat(&messages, 1024){
                 break answer
             }
             println!("Ошибка");
@@ -141,7 +170,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
 
 
 
-async fn handle_command(command:&str,_bot:&Bot,chat:&mut Chat){
+async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
     if command.starts_with("start"){
         if let Some(args)=command.get(7..){
             println!("Args: {args}");
@@ -180,12 +209,10 @@ async fn handle_command(command:&str,_bot:&Bot,chat:&mut Chat){
             return;
         }
 
+        "ping"=>{
+            bot.send_message(chat_id,"pong").await.unwrap();
+        }
+
         _=>{}
     }
-}
-
-
-
-fn create_tutor_menu(){
-    
 }
