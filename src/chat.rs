@@ -4,7 +4,7 @@ use teloxide_core::types::ChatId;
 
 
 
-const HISTORY_TOKEN_LIMIT:usize=3800;
+const HISTORY_TOKEN_LIMIT:usize=2000;
 
 
 
@@ -114,14 +114,20 @@ impl History{
 #[repr(usize)]
 pub enum ChatMode{
     Chatting,
-    Tutor,
-    Homework,
+    Tutor(TutorMode),
     Game,
     Playground,
     Settings,
     ChatModeCount
 }
 
+#[derive(Debug,Clone,Copy)]
+#[repr(usize)]
+pub enum TutorMode{
+    None,
+    Math,
+    Rus
+}
 
 
 #[derive(Clone,Copy)]
@@ -141,11 +147,11 @@ pub struct Chat{
 impl Chat{
     pub fn new()->Chat{
         unsafe{
-            let c=std::mem::transmute::<ChatMode,usize>(ChatMode::ChatModeCount);
+            let c:[usize;2]=std::mem::transmute(ChatMode::ChatModeCount);
 
-            let mut history=Vec::with_capacity(c);
+            let mut history=Vec::with_capacity(c[0]);
 
-            for _ in 0..c{
+            for _ in 0..c[0]{
                 history.push(History::new())
             }
 
@@ -160,7 +166,8 @@ impl Chat{
 
     pub fn history(&mut self)->&mut History{
         unsafe{
-            &mut self.history[std::mem::transmute::<ChatMode,usize>(self.mode)]
+            let c:[usize;2]=std::mem::transmute(self.mode);
+            &mut self.history[c[0]]
         }
     }
 

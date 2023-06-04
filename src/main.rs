@@ -5,13 +5,16 @@ mod openai;
 use chat::{Chats, Chat};
 use openai::OpenAI;
 
+use serde_json::Value;
 use teloxide_core::{
     Bot,
     requests::Requester,
-    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update, Message, ChatId},
+    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update, Message, ChatId, InlineKeyboardButton, InlineKeyboardButtonKind, ReplyMarkup, InlineKeyboardMarkup, CallbackQuery},
 };
 
 use chat::ChatMode;
+
+use crate::chat::TutorMode;
 
 
 
@@ -33,7 +36,6 @@ async fn main(){
         vec![
             BotCommand::new("chatting","Простое общение"),
             BotCommand::new("tutor","Репетитор"),
-            BotCommand::new("homework","Помощь с домашним задание"),
             BotCommand::new("game","Игры"),
             BotCommand::new("playground","Свобожный режим"),
             BotCommand::new("settings","Настройки")
@@ -72,7 +74,9 @@ async fn handle_update(update:Update,bot:&Bot,chats:&mut Chats){
         UpdateKind::CallbackQuery(query)=>{
             if let Some(message)=query.message{
                 if let Some(data)=query.data{
-                    let _chat=chats.get(message.chat.id);
+                    let chat=chats.get(message.chat.id);
+
+                    handle_command_callback(&data,bot,message.chat.id,chat).await;
 
                     match data.as_str(){
                         _=>{}
@@ -87,6 +91,32 @@ async fn handle_update(update:Update,bot:&Bot,chats:&mut Chats){
             let chat=chats.get(message.chat.id);
 
             handle_message(message,bot,chat).await;
+        }
+
+        _=>{}
+    }
+}
+
+
+
+async fn handle_command_callback(callback:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
+    match callback{
+        "math"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::Math));
+            bot.send_message(chat_id,"Ты выбрал математику. Давай начнём. Напиши что-нибудь").await.unwrap();
+        }
+
+        "rus"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::Rus));
+            bot.send_message(chat_id,"Ты выбрал русский язык. Давай начнём. Напиши что-нибудь").await.unwrap();
+        }
+
+        "society"=>{
+
+        }
+
+        "enviroment"=>{
+
         }
 
         _=>{}
@@ -117,23 +147,33 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
 
         let mut messages=Vec::new();
 
-        println!("Mode: {:?}",mode);
-
         match mode{
             ChatMode::Chatting=>{
-                messages.push("{\"role\":\"user\",\"content\":\"You are my friend.We're quite close.We're kids.This is our chat history\"}")
+                let prompt=std::fs::read_to_string("prompts/chatting.json").unwrap().replace('\n',"");
+                messages.push(prompt)
             }
 
-            ChatMode::Tutor=>{
-                messages.push("{\"role\":\"user\",\"content\":\"You are a tutor for kids.I am a kid.You are up to teach me something I want\"}")
-            }
+            ChatMode::Tutor(mode)=>{
+                match mode{
+                    TutorMode::None=>{
+                        return
+                    }
 
-            ChatMode::Homework=>{
-                messages.push("{\"role\":\"user\",\"content\":\"You are a tutor for kids.You help kids with homework.I am a kid\"}")
+                    TutorMode::Math=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/math.json").unwrap().replace('\n',"");
+                        messages.push(prompt)
+                    }
+
+                    TutorMode::Rus=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/rus.json").unwrap().replace('\n',"");
+                        messages.push(prompt)
+                    }
+                }
             }
 
             ChatMode::Game=>{
-                messages.push("{\"role\":\"user\",\"content\":\"We gonna play games.You suggest and play a chat game with me.I am a kid\"}")
+                let prompt=std::fs::read_to_string("prompts/game.json").unwrap().replace('\n',"");
+                messages.push(prompt)
             }
 
             ChatMode::Playground=>{}
@@ -144,7 +184,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
         let history=chat.history().messages();
 
         for message in history.iter(){
-            messages.push(message)
+            messages.push(message.to_string())
         }
 
         let answer=loop{
@@ -153,6 +193,33 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
             }
             println!("Ошибка");
         };
+
+        if let ChatMode::Chatting=mode{
+            let response:Value=serde_json::from_str(&answer.replace('\'',"\"")).unwrap();
+
+            if let Some(abilities)=response["abilities"].as_i64(){
+                if abilities>=9{
+                    bot.send_message(message.chat.id,"Я умею чирикать").await.unwrap();
+                    return
+                }
+            }
+
+            if let Some(play)=response["play"].as_i64(){
+                if play>=9{
+                    let play_button=InlineKeyboardButton::new(
+                        "Играть",
+                        InlineKeyboardButtonKind::CallbackData("play".into())
+                    );
+
+                    let mut send_message=bot.send_message(message.chat.id,"Если хочешь поиграть, то мы можешь перейти в игровой режим.");
+
+                    send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(InlineKeyboardMarkup::new(vec![vec![play_button]])));
+
+                    send_message.await.unwrap();
+                    return
+                }
+            }
+        }
 
         println!("{}",answer);
 
@@ -188,11 +255,10 @@ async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
         }
 
         "tutor"=>{
-            chat.set_mode(ChatMode::Tutor);
-        }
-
-        "homework"=>{
-            chat.set_mode(ChatMode::Homework);
+            chat.set_mode(ChatMode::Tutor(TutorMode::None));
+            let mut send_message=bot.send_message(chat_id,"Выбери то, чем хочешь заняться.");
+            send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(tutor_buttons()));
+            send_message.await.unwrap();
         }
 
         "game"=>{
@@ -214,5 +280,39 @@ async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
         }
 
         _=>{}
+    }
+}
+
+
+fn tutor_buttons()->InlineKeyboardMarkup{
+    let usdt_button=InlineKeyboardButton::new(
+        "Математика",
+        InlineKeyboardButtonKind::CallbackData("math".into())
+    );
+
+    let busd_button=InlineKeyboardButton::new(
+        "Русский",
+        InlineKeyboardButtonKind::CallbackData("rus".into())
+    );
+
+    // let usdc_button=InlineKeyboardButton::new(
+    //     "Общество",
+    //     InlineKeyboardButtonKind::CallbackData("society".into())
+    // );
+
+    // let none_button=InlineKeyboardButton::new(
+    //     "Окружающий мир",
+    //     InlineKeyboardButtonKind::CallbackData("enviroment".into())
+    // );
+
+    let inline_buttons=vec![
+        vec![usdt_button],
+        vec![busd_button],
+        // vec![usdc_button],
+        // vec![none_button]
+    ];
+
+    InlineKeyboardMarkup{
+        inline_keyboard:inline_buttons
     }
 }
