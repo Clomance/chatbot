@@ -110,6 +110,13 @@ impl History{
 
 
 
+pub enum ChatStages{
+    Acquaintance,
+    
+}
+
+
+
 #[derive(Debug,Clone,Copy)]
 #[repr(usize)]
 pub enum ChatMode{

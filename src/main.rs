@@ -3,13 +3,27 @@ mod chat;
 mod openai;
 
 use chat::{Chats, Chat};
+
 use openai::OpenAI;
 
 use serde_json::Value;
+
 use teloxide_core::{
     Bot,
     requests::Requester,
-    types::{AllowedUpdate, UpdateKind, BotCommand, BotCommandScope, Update, Message, ChatId, InlineKeyboardButton, InlineKeyboardButtonKind, ReplyMarkup, InlineKeyboardMarkup, CallbackQuery},
+    types::{
+        AllowedUpdate,
+        UpdateKind,
+        BotCommand,
+        BotCommandScope,
+        Update,
+        Message,
+        ChatId,
+        InlineKeyboardButton,
+        InlineKeyboardButtonKind,
+        ReplyMarkup,
+        InlineKeyboardMarkup
+    }
 };
 
 use chat::ChatMode;
@@ -37,7 +51,7 @@ async fn main(){
             BotCommand::new("chatting","Простое общение"),
             BotCommand::new("tutor","Репетитор"),
             BotCommand::new("game","Игры"),
-            BotCommand::new("playground","Свобожный режим"),
+            BotCommand::new("playground","Свободный режим"),
             BotCommand::new("settings","Настройки")
         ]
     ).await.unwrap();
@@ -285,13 +299,13 @@ async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
 
 
 fn tutor_buttons()->InlineKeyboardMarkup{
-    let usdt_button=InlineKeyboardButton::new(
+    let math=InlineKeyboardButton::new(
         "Математика",
         InlineKeyboardButtonKind::CallbackData("math".into())
     );
 
-    let busd_button=InlineKeyboardButton::new(
-        "Русский",
+    let english=InlineKeyboardButton::new(
+        "Английский",
         InlineKeyboardButtonKind::CallbackData("rus".into())
     );
 
@@ -306,8 +320,8 @@ fn tutor_buttons()->InlineKeyboardMarkup{
     // );
 
     let inline_buttons=vec![
-        vec![usdt_button],
-        vec![busd_button],
+        vec![math],
+        vec![english],
         // vec![usdc_button],
         // vec![none_button]
     ];
