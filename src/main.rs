@@ -120,17 +120,29 @@ async fn handle_command_callback(callback:&str,bot:&Bot,chat_id:ChatId,chat:&mut
             bot.send_message(chat_id,"Ты выбрал математику. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
-        "rus"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::Rus));
-            bot.send_message(chat_id,"Ты выбрал русский язык. Давай начнём. Напиши что-нибудь").await.unwrap();
+        "english"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            bot.send_message(chat_id,"Ты выбрал английский язык. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
-        "society"=>{
+        "finance"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            bot.send_message(chat_id,"Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь").await.unwrap();
+        }
 
+        "astronomy"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            bot.send_message(chat_id,"Ты выбрал астрономию. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
         "enviroment"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            bot.send_message(chat_id,"Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь").await.unwrap();
+        }
 
+        "selfcare"=>{
+            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            bot.send_message(chat_id,"Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
         _=>{}
@@ -178,8 +190,29 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
                         messages.push(prompt)
                     }
 
-                    TutorMode::Rus=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/rus.json").unwrap().replace('\n',"");
+                    TutorMode::English=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/english.json").unwrap().replace('\n',"");
+                        messages.push(prompt)
+                    }
+
+
+                    TutorMode::Finance=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/finance.json").unwrap().replace('\n',"");
+                        messages.push(prompt)
+                    }
+
+                    TutorMode::Astronomy=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/astronomy.json").unwrap().replace('\n',"");
+                        messages.push(prompt)
+                    }
+
+                    TutorMode::Enviroment=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/enviroment.json").unwrap().replace('\n',"");
+                        messages.push(prompt)
+                    }
+
+                    TutorMode::SelfCare=>{
+                        let prompt=std::fs::read_to_string("prompts/tutor/selfcare.json").unwrap().replace('\n',"");
                         messages.push(prompt)
                     }
                 }
@@ -306,24 +339,36 @@ fn tutor_buttons()->InlineKeyboardMarkup{
 
     let english=InlineKeyboardButton::new(
         "Английский",
-        InlineKeyboardButtonKind::CallbackData("rus".into())
+        InlineKeyboardButtonKind::CallbackData("english".into())
     );
 
-    // let usdc_button=InlineKeyboardButton::new(
-    //     "Общество",
-    //     InlineKeyboardButtonKind::CallbackData("society".into())
-    // );
+    let finance=InlineKeyboardButton::new(
+        "Финансовая грамотность",
+        InlineKeyboardButtonKind::CallbackData("finance".into())
+    );
 
-    // let none_button=InlineKeyboardButton::new(
-    //     "Окружающий мир",
-    //     InlineKeyboardButtonKind::CallbackData("enviroment".into())
-    // );
+    let astronomy=InlineKeyboardButton::new(
+        "Астрономия",
+        InlineKeyboardButtonKind::CallbackData("astronomy".into())
+    );
+
+    let enviroment=InlineKeyboardButton::new(
+        "Окружающий мир",
+        InlineKeyboardButtonKind::CallbackData("enviroment".into())
+    );
+
+    let self_care=InlineKeyboardButton::new(
+        "Здоровье и гигиена",
+        InlineKeyboardButtonKind::CallbackData("selfcare".into())
+    );
 
     let inline_buttons=vec![
         vec![math],
         vec![english],
-        // vec![usdc_button],
-        // vec![none_button]
+        vec![finance],
+        vec![astronomy],
+        vec![enviroment],
+        vec![self_care]
     ];
 
     InlineKeyboardMarkup{

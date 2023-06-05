@@ -110,13 +110,6 @@ impl History{
 
 
 
-pub enum ChatStages{
-    Acquaintance,
-    
-}
-
-
-
 #[derive(Debug,Clone,Copy)]
 #[repr(usize)]
 pub enum ChatMode{
@@ -133,7 +126,11 @@ pub enum ChatMode{
 pub enum TutorMode{
     None,
     Math,
-    Rus
+    English,
+    Finance,
+    Astronomy,
+    Enviroment,
+    SelfCare
 }
 
 
