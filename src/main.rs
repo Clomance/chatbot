@@ -126,22 +126,22 @@ async fn handle_command_callback(callback:&str,bot:&Bot,chat_id:ChatId,chat:&mut
         }
 
         "finance"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            chat.set_mode(ChatMode::Tutor(TutorMode::Finance));
             bot.send_message(chat_id,"Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
         "astronomy"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            chat.set_mode(ChatMode::Tutor(TutorMode::Astronomy));
             bot.send_message(chat_id,"Ты выбрал астрономию. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
         "enviroment"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            chat.set_mode(ChatMode::Tutor(TutorMode::Enviroment));
             bot.send_message(chat_id,"Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
         "selfcare"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::English));
+            chat.set_mode(ChatMode::Tutor(TutorMode::SelfCare));
             bot.send_message(chat_id,"Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь").await.unwrap();
         }
 
