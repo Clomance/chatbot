@@ -28,12 +28,7 @@ impl UpdateHandler{
                 if let Some(message)=query.message{
                     if let Some(data)=query.data{
                         let chat=self.chats.lock().await.get(message.chat.id);
-
                         CommandCallbackHandler::new(self.bot.clone(),chat).handle(&data).await;
-
-                        match data.as_str(){
-                            _=>{}
-                        }
                     }
                 }
 

@@ -1,5 +1,5 @@
 mod chat;
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use chat::Chats;
 
@@ -13,10 +13,7 @@ use teloxide_core::{
     types::{
         AllowedUpdate,
         BotCommand,
-        BotCommandScope,
-        InlineKeyboardButton,
-        InlineKeyboardButtonKind,
-        InlineKeyboardMarkup
+        BotCommandScope
     }
 };
 use tokio::sync::Mutex;
@@ -33,7 +30,7 @@ const BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 async fn main(){
     let bot=Bot::new(BOT_TOKEN);
 
-    println!("openai bot start");
+    println!("BotStart");
 
     let mut delete=bot.delete_my_commands();
     delete.scope=Some(BotCommandScope::Default);
@@ -41,13 +38,15 @@ async fn main(){
 
     bot.set_my_commands(
         vec![
-            BotCommand::new("chatting","Простое общение"),
-            BotCommand::new("tutor","Репетитор"),
+            BotCommand::new("chatting","Болтовня"),
+            BotCommand::new("studying","Учёба"),
             BotCommand::new("game","Игры"),
             BotCommand::new("playground","Свободный режим"),
             BotCommand::new("settings","Настройки")
         ]
     ).await.unwrap();
+
+    println!("CommandsSet");
 
     let chats=Arc::new(Mutex::new(Chats::new()));
 
@@ -76,52 +75,7 @@ async fn main(){
                 UpdateHandler::new(bot,update,chats).handle().await
             });
         }
-    }
-}
 
-
-
-pub fn tutor_buttons()->InlineKeyboardMarkup{
-    let math=InlineKeyboardButton::new(
-        "Математика",
-        InlineKeyboardButtonKind::CallbackData("math".into())
-    );
-
-    let english=InlineKeyboardButton::new(
-        "Английский",
-        InlineKeyboardButtonKind::CallbackData("english".into())
-    );
-
-    let finance=InlineKeyboardButton::new(
-        "Финансовая грамотность",
-        InlineKeyboardButtonKind::CallbackData("finance".into())
-    );
-
-    let astronomy=InlineKeyboardButton::new(
-        "Астрономия",
-        InlineKeyboardButtonKind::CallbackData("astronomy".into())
-    );
-
-    let enviroment=InlineKeyboardButton::new(
-        "Окружающий мир",
-        InlineKeyboardButtonKind::CallbackData("enviroment".into())
-    );
-
-    let self_care=InlineKeyboardButton::new(
-        "Здоровье и гигиена",
-        InlineKeyboardButtonKind::CallbackData("selfcare".into())
-    );
-
-    let inline_buttons=vec![
-        vec![math],
-        vec![english],
-        vec![finance],
-        vec![astronomy],
-        vec![enviroment],
-        vec![self_care]
-    ];
-
-    InlineKeyboardMarkup{
-        inline_keyboard:inline_buttons
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 }

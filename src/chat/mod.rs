@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::{Arc}};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
 use teloxide_core::types::ChatId;
@@ -72,8 +72,8 @@ impl History{
         &self.messages
     }
 
-    pub fn push_question(&mut self,question:&str){
-        let message=format!("{{\"role\":\"user\",\"content\":\"{}\"}}",question);
+    pub fn push_request(&mut self,request:&str){
+        let message=format!("{{\"role\":\"user\",\"content\":\"{}\"}}",request);
 
         let tokens=gpt_encoder::Encoder::new().encode(message.clone());
 
@@ -83,8 +83,8 @@ impl History{
         self.messages.push(message);
     }
 
-    pub fn push_answer(&mut self,answer:&str){
-        let message=format!("{{\"role\":\"assistant\",\"content\":\"{}\"}}",answer);
+    pub fn push_response(&mut self,response:&str){
+        let message=format!("{{\"role\":\"assistant\",\"content\":\"{}\"}}",response);
 
         let tokens=gpt_encoder::Encoder::new().encode(message.clone());
 
@@ -110,13 +110,21 @@ impl History{
 }
 
 
+
 #[derive(Debug,Clone,Copy)]
 pub enum ChatAction{
     Greet,
     AskName,
     AskSex,
-    AskAge,
-    Chat,
+    AskAge
+}
+
+
+
+pub enum ChatState{
+    Initial(ChatAction),
+    PartiallyFunctional,
+    FullyFunctional(ChatMode)
 }
 
 
@@ -165,7 +173,7 @@ impl User{
 pub struct Chat{
     pub id:ChatId,
     // flags:ChatFlags,
-    pub mode:ChatMode,
+    pub state:ChatState,
     history:Vec<History>,
     pub user:User,
 }
@@ -184,7 +192,7 @@ impl Chat{
             Self{
                 id,
                 // flags:ChatFlags::new(),
-                mode:ChatMode::Chatting,
+                state:ChatState::Initial(ChatAction::Greet),
                 history,
                 user:User::new()
             }
@@ -192,14 +200,19 @@ impl Chat{
     }
 
     pub fn history(&mut self)->&mut History{
-        unsafe{
-            let c:[usize;2]=std::mem::transmute(self.mode);
+        if let ChatState::FullyFunctional(mode)=self.state{
+            let c:[usize;2]=unsafe{std::mem::transmute(mode)};
             &mut self.history[c[0]]
+        }
+        else{
+            &mut self.history[0]
         }
     }
 
     pub fn set_mode(&mut self,mode:ChatMode){
-        self.mode=mode
+        if let ChatState::FullyFunctional(_)=self.state{
+            self.state=ChatState::FullyFunctional(mode)
+        }
     }
 
     pub fn clear_all_history(&mut self){
