@@ -1,34 +1,27 @@
 mod chat;
+use std::sync::Arc;
+
+use chat::Chats;
 
 mod openai;
 
-use chat::{Chats, Chat};
-
-use openai::OpenAI;
-
-use serde_json::Value;
+mod event_processing;
 
 use teloxide_core::{
     Bot,
     requests::Requester,
     types::{
         AllowedUpdate,
-        UpdateKind,
         BotCommand,
         BotCommandScope,
-        Update,
-        Message,
-        ChatId,
         InlineKeyboardButton,
         InlineKeyboardButtonKind,
-        ReplyMarkup,
         InlineKeyboardMarkup
     }
 };
+use tokio::sync::Mutex;
 
-use chat::ChatMode;
-
-use crate::chat::TutorMode;
+use crate::event_processing::UpdateHandler;
 
 
 
@@ -56,7 +49,7 @@ async fn main(){
         ]
     ).await.unwrap();
 
-    let mut chats=Chats::new();
+    let chats=Arc::new(Mutex::new(Chats::new()));
 
     let mut last_update_id=None;
     loop{
@@ -74,265 +67,21 @@ async fn main(){
         };
 
         for update in updates{
-            let update_id=update.id;
-            handle_update(update,&bot,&mut chats).await;
-            last_update_id=Some(update_id+1);
+            last_update_id=Some(update.id+1);
+
+            let bot=bot.clone();
+            let chats=chats.clone();
+
+            tokio::spawn(async move{
+                UpdateHandler::new(bot,update,chats).handle().await
+            });
         }
     }
 }
 
 
 
-async fn handle_update(update:Update,bot:&Bot,chats:&mut Chats){
-    match update.kind{
-        UpdateKind::CallbackQuery(query)=>{
-            if let Some(message)=query.message{
-                if let Some(data)=query.data{
-                    let chat=chats.get(message.chat.id);
-
-                    handle_command_callback(&data,bot,message.chat.id,chat).await;
-
-                    match data.as_str(){
-                        _=>{}
-                    }
-                }
-            }
-
-            let _=bot.answer_callback_query(query.id).await;
-        }
-
-        UpdateKind::Message(message)=>{
-            let chat=chats.get(message.chat.id);
-
-            handle_message(message,bot,chat).await;
-        }
-
-        _=>{}
-    }
-}
-
-
-
-async fn handle_command_callback(callback:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
-    match callback{
-        "math"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::Math));
-            bot.send_message(chat_id,"Ты выбрал математику. Давай начнём. Напиши что-нибудь").await.unwrap();
-        }
-
-        "english"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::English));
-            bot.send_message(chat_id,"Ты выбрал английский язык. Давай начнём. Напиши что-нибудь").await.unwrap();
-        }
-
-        "finance"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::Finance));
-            bot.send_message(chat_id,"Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь").await.unwrap();
-        }
-
-        "astronomy"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::Astronomy));
-            bot.send_message(chat_id,"Ты выбрал астрономию. Давай начнём. Напиши что-нибудь").await.unwrap();
-        }
-
-        "enviroment"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::Enviroment));
-            bot.send_message(chat_id,"Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь").await.unwrap();
-        }
-
-        "selfcare"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::SelfCare));
-            bot.send_message(chat_id,"Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь").await.unwrap();
-        }
-
-        _=>{}
-    }
-}
-
-
-
-async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
-    if let Some(text)=message.text(){
-        if text.starts_with("/"){
-            if let Some(command)=text.get(1..){
-                handle_command(command,bot,chat).await;
-            }
-
-            return
-        }
-
-        let text=text
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t");
-
-        chat.history().push_question(&text);
-
-        let mode=chat.mode;
-
-        let mut messages=Vec::new();
-
-        match mode{
-            ChatMode::Chatting=>{
-                let prompt=std::fs::read_to_string("prompts/chatting.json").unwrap().replace('\n',"");
-                messages.push(prompt)
-            }
-
-            ChatMode::Tutor(mode)=>{
-                chat.history().clear();
-                match mode{
-                    TutorMode::None=>{
-                        return
-                    }
-
-                    TutorMode::Math=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/math.json").unwrap().replace('\n',"");
-                        messages.push(prompt)
-                    }
-
-                    TutorMode::English=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/english.json").unwrap().replace('\n',"");
-                        messages.push(prompt)
-                    }
-
-
-                    TutorMode::Finance=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/finance.json").unwrap().replace('\n',"");
-                        messages.push(prompt)
-                    }
-
-                    TutorMode::Astronomy=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/astronomy.json").unwrap().replace('\n',"");
-                        messages.push(prompt)
-                    }
-
-                    TutorMode::Enviroment=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/enviroment.json").unwrap().replace('\n',"");
-                        messages.push(prompt)
-                    }
-
-                    TutorMode::SelfCare=>{
-                        let prompt=std::fs::read_to_string("prompts/tutor/selfcare.json").unwrap().replace('\n',"");
-                        messages.push(prompt)
-                    }
-                }
-            }
-
-            ChatMode::Game=>{
-                let prompt=std::fs::read_to_string("prompts/game.json").unwrap().replace('\n',"");
-                messages.push(prompt)
-            }
-
-            ChatMode::Playground=>{}
-
-            _=>return
-        }
-
-        let history=chat.history().messages();
-
-        for message in history.iter(){
-            messages.push(message.to_string())
-        }
-
-        let answer=loop{
-            if let Some(answer)=OpenAI::send_chat(&messages, 1024){
-                break answer
-            }
-            println!("Ошибка");
-        };
-
-        if let ChatMode::Chatting=mode{
-            let response:Value=serde_json::from_str(&answer.replace('\'',"\"")).unwrap();
-
-            if let Some(abilities)=response["abilities"].as_i64(){
-                if abilities>=9{
-                    bot.send_message(message.chat.id,"Я умею чирикать").await.unwrap();
-                    return
-                }
-            }
-
-            if let Some(play)=response["play"].as_i64(){
-                if play>=9{
-                    let play_button=InlineKeyboardButton::new(
-                        "Играть",
-                        InlineKeyboardButtonKind::CallbackData("play".into())
-                    );
-
-                    let mut send_message=bot.send_message(message.chat.id,"Если хочешь поиграть, то мы можешь перейти в игровой режим.");
-
-                    send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(InlineKeyboardMarkup::new(vec![vec![play_button]])));
-
-                    send_message.await.unwrap();
-                    return
-                }
-            }
-        }
-
-        println!("{}",answer);
-
-        let answer=answer
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t");
-
-        chat.history().push_answer(&answer);
-
-        bot.send_message(message.chat.id,answer).await.unwrap();
-    }
-}
-
-
-
-async fn handle_command(command:&str,bot:&Bot,chat:&mut Chat){
-    if command.starts_with("start"){
-        if let Some(args)=command.get(7..){
-            println!("Args: {args}");
-        }
-        else{
-            println!("No args")
-        }
-
-        return;
-    }
-
-    match command{
-        "chatting"=>{
-            chat.set_mode(ChatMode::Chatting);
-        }
-
-        "tutor"=>{
-            chat.set_mode(ChatMode::Tutor(TutorMode::None));
-            let mut send_message=bot.send_message(chat.id,"Выбери то, чем хочешь заняться.");
-            send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(tutor_buttons()));
-            send_message.await.unwrap();
-        }
-
-        "game"=>{
-            chat.set_mode(ChatMode::Game);
-        }
-
-        "playground"=>{
-            chat.set_mode(ChatMode::Playground);
-            return;
-        }
-
-        "settings"=>{
-            // chat.set_mode(ChatMode::Settings);
-            return;
-        }
-
-        "ping"=>{
-            bot.send_message(chat.id,"pong").await.unwrap();
-        }
-
-        _=>{}
-    }
-}
-
-
-fn tutor_buttons()->InlineKeyboardMarkup{
+pub fn tutor_buttons()->InlineKeyboardMarkup{
     let math=InlineKeyboardButton::new(
         "Математика",
         InlineKeyboardButtonKind::CallbackData("math".into())

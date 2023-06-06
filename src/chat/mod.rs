@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Arc}};
+use tokio::sync::Mutex;
 
 use teloxide_core::types::ChatId;
 
@@ -211,7 +212,7 @@ impl Chat{
 
 
 pub struct Chats{
-    chats:HashMap<ChatId,Chat>
+    chats:HashMap<ChatId,Arc<Mutex<Chat>>>
 }
 
 impl Chats{
@@ -221,10 +222,10 @@ impl Chats{
         }
     }
 
-    pub fn get(&mut self,chat_id:ChatId)->&mut Chat{
-        if self.chats.get_mut(&chat_id).is_none(){
-            self.chats.insert(chat_id,Chat::new(chat_id));
+    pub fn get(&mut self,chat_id:ChatId)->Arc<Mutex<Chat>>{
+        if self.chats.get(&chat_id).is_none(){
+            self.chats.insert(chat_id,Arc::new(Mutex::new(Chat::new(chat_id))));
         }
-        self.chats.get_mut(&chat_id).unwrap()
+        self.chats.get(&chat_id).unwrap().clone()
     }
 }
