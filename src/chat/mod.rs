@@ -8,45 +8,45 @@ const HISTORY_TOKEN_LIMIT:usize=2000;
 
 
 
-#[derive(Clone,Copy,Debug)]
-#[repr(u64)]
-pub enum ChatFlag{
-    Subscibed
-}
+// #[derive(Clone,Copy,Debug)]
+// #[repr(u64)]
+// pub enum ChatFlag{
+//     Subscibed
+// }
 
 
 
-pub struct ChatFlags{
-    inner:u64
-}
+// pub struct ChatFlags{
+//     inner:u64
+// }
 
-impl ChatFlags{
-    pub const fn new()->ChatFlags{
-        Self{
-            inner:0u64
-        }
-    }
+// impl ChatFlags{
+//     pub const fn new()->ChatFlags{
+//         Self{
+//             inner:0u64
+//         }
+//     }
 
-    pub fn set_raw(&mut self,inner:u64){
-        self.inner=inner
-    }
+//     pub fn set_raw(&mut self,inner:u64){
+//         self.inner=inner
+//     }
 
-    pub const fn inner(&self)->u64{
-        self.inner
-    }
+//     pub const fn inner(&self)->u64{
+//         self.inner
+//     }
 
-    pub fn set(&mut self,flag:ChatFlag){
-        self.inner|=flag as u64
-    }
+//     pub fn set(&mut self,flag:ChatFlag){
+//         self.inner|=flag as u64
+//     }
 
-    pub fn remove(&mut self,flag:ChatFlag){
-        self.inner&=!(flag as u64)
-    }
+//     pub fn remove(&mut self,flag:ChatFlag){
+//         self.inner&=!(flag as u64)
+//     }
 
-    pub const fn check(&self,flag:ChatFlag)->bool{
-        (self.inner&(flag as u64))==flag as u64
-    }
-}
+//     pub const fn check(&self,flag:ChatFlag)->bool{
+//         (self.inner&(flag as u64))==flag as u64
+//     }
+// }
 
 
 
@@ -109,6 +109,16 @@ impl History{
 }
 
 
+#[derive(Debug,Clone,Copy)]
+pub enum ChatAction{
+    Greet,
+    AskName,
+    AskSex,
+    AskAge,
+    Chat,
+}
+
+
 
 #[derive(Debug,Clone,Copy)]
 #[repr(usize)]
@@ -117,7 +127,6 @@ pub enum ChatMode{
     Tutor(TutorMode),
     Game,
     Playground,
-    Settings,
     ChatModeCount
 }
 
@@ -134,22 +143,34 @@ pub enum TutorMode{
 }
 
 
-#[derive(Clone,Copy)]
-pub enum Language{
-    Russian,
-    English
+
+pub struct User{
+    pub name:String,
+    pub sex:bool,
+    pub age:u8
+}
+
+impl User{
+    pub fn new()->User{
+        Self{
+            name:String::new(),
+            sex:false,
+            age:0u8
+        }
+    }
 }
 
 
 pub struct Chat{
-    flags:ChatFlags,
-    mode:ChatMode,
-    language:Language,
+    pub id:ChatId,
+    // flags:ChatFlags,
+    pub mode:ChatMode,
     history:Vec<History>,
+    pub user:User,
 }
 
 impl Chat{
-    pub fn new()->Chat{
+    pub fn new(id:ChatId)->Chat{
         unsafe{
             let c:[usize;2]=std::mem::transmute(ChatMode::ChatModeCount);
 
@@ -160,10 +181,11 @@ impl Chat{
             }
 
             Self{
-                flags:ChatFlags::new(),
+                id,
+                // flags:ChatFlags::new(),
                 mode:ChatMode::Chatting,
-                language:Language::Russian,
-                history
+                history,
+                user:User::new()
             }
         }
     }
@@ -175,12 +197,14 @@ impl Chat{
         }
     }
 
-    pub fn mode(&self)->ChatMode{
-        self.mode
-    }
-
     pub fn set_mode(&mut self,mode:ChatMode){
         self.mode=mode
+    }
+
+    pub fn clear_all_history(&mut self){
+        for history in &mut self.history{
+            history.clear()
+        }
     }
 }
 
@@ -199,7 +223,7 @@ impl Chats{
 
     pub fn get(&mut self,chat_id:ChatId)->&mut Chat{
         if self.chats.get_mut(&chat_id).is_none(){
-            self.chats.insert(chat_id,Chat::new());
+            self.chats.insert(chat_id,Chat::new(chat_id));
         }
         self.chats.get_mut(&chat_id).unwrap()
     }

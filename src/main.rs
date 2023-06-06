@@ -155,7 +155,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
     if let Some(text)=message.text(){
         if text.starts_with("/"){
             if let Some(command)=text.get(1..){
-                handle_command(command,bot,message.chat.id,chat).await;
+                handle_command(command,bot,chat).await;
             }
 
             return
@@ -169,7 +169,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
 
         chat.history().push_question(&text);
 
-        let mode=chat.mode();
+        let mode=chat.mode;
 
         let mut messages=Vec::new();
 
@@ -180,6 +180,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
             }
 
             ChatMode::Tutor(mode)=>{
+                chat.history().clear();
                 match mode{
                     TutorMode::None=>{
                         return
@@ -284,7 +285,7 @@ async fn handle_message(message:Message,bot:&Bot,chat:&mut Chat){
 
 
 
-async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
+async fn handle_command(command:&str,bot:&Bot,chat:&mut Chat){
     if command.starts_with("start"){
         if let Some(args)=command.get(7..){
             println!("Args: {args}");
@@ -303,7 +304,7 @@ async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
 
         "tutor"=>{
             chat.set_mode(ChatMode::Tutor(TutorMode::None));
-            let mut send_message=bot.send_message(chat_id,"Выбери то, чем хочешь заняться.");
+            let mut send_message=bot.send_message(chat.id,"Выбери то, чем хочешь заняться.");
             send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(tutor_buttons()));
             send_message.await.unwrap();
         }
@@ -323,7 +324,7 @@ async fn handle_command(command:&str,bot:&Bot,chat_id:ChatId,chat:&mut Chat){
         }
 
         "ping"=>{
-            bot.send_message(chat_id,"pong").await.unwrap();
+            bot.send_message(chat.id,"pong").await.unwrap();
         }
 
         _=>{}

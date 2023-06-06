@@ -19,7 +19,6 @@ lto = true
 url = "2.3.1"
 serde_json = "1.0.89"
 futures = "0.3.25"
-rand = "0.8.5"
 teloxide-core = "0.9.1"
 gpt-encoder = "0.1.1"
 
