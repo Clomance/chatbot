@@ -1,8 +1,15 @@
 use std::time::Duration;
 
-use attohttpc::{MultipartBuilder, MultipartFile, body::Text};
+use attohttpc::{
+    // MultipartBuilder,
+    // MultipartFile,
+    body::Text
+};
 
-use serde_json::{Value, json};
+use serde_json::{
+    // json,
+    Value
+};
 
 
 
@@ -118,93 +125,108 @@ impl OpenAI{
         Some(message.to_string())
     }
 
-    pub fn upload_file(path:&str,purpose:&str)->String{
-        let url="https://api.openai.com/v1/files";
+    // pub fn upload_file(path:&str,purpose:&str)->String{
+    //     let url="https://api.openai.com/v1/files";
 
-        let file=std::fs::read(path).unwrap();
+    //     let file=std::fs::read(path).unwrap();
 
-        let multipart=MultipartBuilder::new()
-            .with_text("purpose",purpose)
-            .with_file(MultipartFile::new("file",&file).with_filename("data.jsonl"))
-            .build().unwrap();
+    //     let multipart=MultipartBuilder::new()
+    //         .with_text("purpose",purpose)
+    //         .with_file(MultipartFile::new("file",&file).with_filename("data.jsonl"))
+    //         .build().unwrap();
 
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
-            .header("Authorization",format!("Bearer {API_KEY}"))
-            .body(multipart)
-            .send().unwrap();
+    //     let response=attohttpc::post(url)
+    //         .timeout(Duration::from_secs(1200))
+    //         .header("Authorization",format!("Bearer {API_KEY}"))
+    //         .body(multipart)
+    //         .send().unwrap();
 
-        let text=response.text_utf8().unwrap();
+    //     let text=response.text_utf8().unwrap();
 
-        println!("{}",text);
+    //     println!("{}",text);
 
-        let payload:Value=serde_json::from_str(&text).unwrap();
+    //     let payload:Value=serde_json::from_str(&text).unwrap();
 
-        payload["id"].as_str().unwrap().to_string()
-    }
+    //     payload["id"].as_str().unwrap().to_string()
+    // }
 
-    pub fn create_fine_tune(file_id:&str){
-        let url="https://api.openai.com/v1/fine-tunes";
+    // pub fn create_fine_tune(file_id:&str){
+    //     let url="https://api.openai.com/v1/fine-tunes";
 
-        let payload=json!({
-            "training_file":file_id,
-            "model":"davinci"
-        });
+    //     let payload=json!({
+    //         "training_file":file_id,
+    //         "model":"davinci"
+    //     });
 
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
-            .header("Authorization",format!("Bearer {API_KEY}"))
-            .json(&payload).unwrap()
-            .send().unwrap();
+    //     let response=attohttpc::post(url)
+    //         .timeout(Duration::from_secs(1200))
+    //         .header("Authorization",format!("Bearer {API_KEY}"))
+    //         .json(&payload).unwrap()
+    //         .send().unwrap();
 
-        let text=response.text_utf8().unwrap();
+    //     let text=response.text_utf8().unwrap();
 
-        println!("{}",text);
-    }
+    //     println!("{}",text);
+    // }
 
-    pub fn get_fine_tunes(){
-        let url="https://api.openai.com/v1/fine-tunes";
+    // pub fn get_fine_tunes(){
+    //     let url="https://api.openai.com/v1/fine-tunes";
 
-        let response=attohttpc::get(url)
-            .timeout(Duration::from_secs(1200))
-            .header("Authorization",format!("Bearer {API_KEY}"))
-            .send().unwrap();
+    //     let response=attohttpc::get(url)
+    //         .timeout(Duration::from_secs(1200))
+    //         .header("Authorization",format!("Bearer {API_KEY}"))
+    //         .send().unwrap();
 
-        let text=response.text_utf8().unwrap();
+    //     let text=response.text_utf8().unwrap();
 
-        println!("{}",text);
-    }
+    //     println!("{}",text);
+    // }
 
-    pub fn create_embedding(input:&str)->Vec<f32>{
-        let url="https://api.openai.com/v1/embeddings";
+    // pub fn create_embedding(input:&str)->Vec<f32>{
+    //     let url="https://api.openai.com/v1/embeddings";
 
-        let payload=format!("\
-            {{\
-                \"model\":\"text-embedding-ada-002\",\
-                \"input\":\"{input}\"\
-            }}\
-        ");
+    //     let payload=format!("\
+    //         {{\
+    //             \"model\":\"text-embedding-ada-002\",\
+    //             \"input\":\"{input}\"\
+    //         }}\
+    //     ");
 
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
-            .header("Authorization",format!("Bearer {API_KEY}"))
-            .header("Content-Type","application/json;charset=utf-8")
-            .body(Text(payload))
-            .send().unwrap();
+    //     let response=attohttpc::post(url)
+    //         .timeout(Duration::from_secs(1200))
+    //         .header("Authorization",format!("Bearer {API_KEY}"))
+    //         .header("Content-Type","application/json;charset=utf-8")
+    //         .body(Text(payload))
+    //         .send().unwrap();
 
-        let text=response.text_utf8().unwrap();
+    //     let text=response.text_utf8().unwrap();
 
-        let payload:Value=serde_json::from_str(&text).unwrap();
+    //     let payload:Value=serde_json::from_str(&text).unwrap();
 
-        let usage=&payload["usage"];
-        println!("{usage:?}");
+    //     let usage=&payload["usage"];
+    //     println!("{usage:?}");
 
-        let mut vectors=Vec::new();
+    //     let mut vectors=Vec::new();
 
-        for vector in payload["data"].as_array().unwrap()[0]["embedding"].as_array().unwrap(){
-            vectors.push(vector.as_f64().unwrap() as f32)
+    //     for vector in payload["data"].as_array().unwrap()[0]["embedding"].as_array().unwrap(){
+    //         vectors.push(vector.as_f64().unwrap() as f32)
+    //     }
+
+    //     vectors
+    // }
+}
+
+
+
+pub struct OpenAIWrapper;
+
+impl OpenAIWrapper{
+    pub fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->String{
+        loop{
+            if let Some(response)=OpenAI::send_chat(&messages,max_tokens){
+                break response
+            }
+            println!("Ошибка");
         }
-
-        vectors
     }
 }

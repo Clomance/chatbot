@@ -1,170 +1,137 @@
-use std::{collections::HashMap, sync::Arc};
+use crate::model::{
+    GameModel,
+    TutorModel,
+    ChatModel,
+    PlaygroundModel,
+    HomeworkModel
+};
+
+mod history;
+pub use history::History;
+
+use std::{
+    sync::Arc,
+    collections::HashMap,
+    mem::ManuallyDrop
+};
+
 use tokio::sync::Mutex;
 
 use teloxide_core::types::ChatId;
 
 
 
-const HISTORY_TOKEN_LIMIT:usize=2000;
+pub const HISTORY_TOKEN_LIMIT:usize=2000;
 
 
 
-// #[derive(Clone,Copy,Debug)]
-// #[repr(u64)]
-// pub enum ChatFlag{
-//     Subscibed
-// }
-
-
-
-// pub struct ChatFlags{
-//     inner:u64
-// }
-
-// impl ChatFlags{
-//     pub const fn new()->ChatFlags{
-//         Self{
-//             inner:0u64
-//         }
-//     }
-
-//     pub fn set_raw(&mut self,inner:u64){
-//         self.inner=inner
-//     }
-
-//     pub const fn inner(&self)->u64{
-//         self.inner
-//     }
-
-//     pub fn set(&mut self,flag:ChatFlag){
-//         self.inner|=flag as u64
-//     }
-
-//     pub fn remove(&mut self,flag:ChatFlag){
-//         self.inner&=!(flag as u64)
-//     }
-
-//     pub const fn check(&self,flag:ChatFlag)->bool{
-//         (self.inner&(flag as u64))==flag as u64
-//     }
-// }
-
-
-
-pub struct History{
-    messages:Vec<String>,
-    tokens:usize
-}
-
-impl History{
-    pub fn new()->History{
-        Self{
-            messages:Vec::new(),
-            tokens:0usize
-        }
-    }
-
-    pub fn is_empty(&self)->bool{
-        self.messages.is_empty()
-    }
-
-    pub fn messages(&self)->&Vec<String>{
-        &self.messages
-    }
-
-    pub fn push_request(&mut self,request:&str){
-        let message=format!("{{\"role\":\"user\",\"content\":\"{}\"}}",request);
-
-        let tokens=gpt_encoder::Encoder::new().encode(message.clone());
-
-        self.tokens+=tokens.len();
-        self.remove_old();
-
-        self.messages.push(message);
-    }
-
-    pub fn push_response(&mut self,response:&str){
-        let message=format!("{{\"role\":\"assistant\",\"content\":\"{}\"}}",response);
-
-        let tokens=gpt_encoder::Encoder::new().encode(message.clone());
-
-        self.tokens+=tokens.len();
-        self.remove_old();
-
-        self.messages.push(message);
-    }
-
-    pub fn remove_old(&mut self){
-        while self.tokens>=HISTORY_TOKEN_LIMIT{
-            let message=self.messages.remove(0);
-
-            let tokens=gpt_encoder::Encoder::new().encode(message);
-
-            self.tokens-=tokens.len();
-        }
-    }
-
-    pub fn clear(&mut self){
-        self.messages.clear()
-    }
-}
-
-
-
-#[derive(Debug,Clone,Copy)]
-pub enum ChatAction{
-    Greet,
-    AskName,
-    AskSex,
-    AskAge
-}
-
-
-
+#[derive(Clone,Copy)]
 pub enum ChatState{
-    Initial(ChatAction),
+    Initial,
     PartiallyFunctional,
     FullyFunctional(ChatMode)
 }
 
 
 
-#[derive(Debug,Clone,Copy)]
-#[repr(usize)]
+#[derive(Clone,Copy)]
 pub enum ChatMode{
-    Chatting,
-    Tutor(TutorMode),
+    Chat,
+    Study(StudyMode),
     Game,
-    Playground,
-    ChatModeCount
+    Playground
 }
 
-#[derive(Debug,Clone,Copy)]
-#[repr(usize)]
-pub enum TutorMode{
+
+
+#[derive(Clone,Copy)]
+pub enum StudyMode{
     None,
-    Math,
-    English,
-    Finance,
-    Astronomy,
-    Enviroment,
-    SelfCare
+    Tutor,
+    Homework
 }
 
 
-
-pub struct User{
-    pub name:String,
-    pub sex:bool,
-    pub age:u8
+pub union ModeData{
+    chat:ManuallyDrop<ChatModel>,
+    homework:ManuallyDrop<HomeworkModel>,
+    tutor:ManuallyDrop<TutorModel>,
+    game:ManuallyDrop<GameModel>,
+    playground:ManuallyDrop<PlaygroundModel>
 }
 
-impl User{
-    pub fn new()->User{
+impl ModeData{
+    pub fn new()->ModeData{
         Self{
-            name:String::new(),
-            sex:false,
-            age:0u8
+            chat:ManuallyDrop::new(ChatModel::new())
+        }
+    }
+
+    fn set(&mut self,mode:ChatMode){
+        match mode{
+            ChatMode::Chat=>self.chat=ManuallyDrop::new(ChatModel::new()),
+
+            ChatMode::Study(mode)=>match mode{
+                StudyMode::None=>{}
+
+                StudyMode::Tutor=>self.tutor=ManuallyDrop::new(TutorModel::new()),
+
+                StudyMode::Homework=>self.homework=ManuallyDrop::new(HomeworkModel::new()),
+            }
+
+            ChatMode::Game=>self.game=ManuallyDrop::new(GameModel::new()),
+
+            ChatMode::Playground=>self.playground=ManuallyDrop::new(PlaygroundModel::new())
+        }
+    }
+
+    fn clear(&mut self,mode:ChatMode){
+        unsafe{
+            match mode{
+                ChatMode::Chat=>self.chat=ManuallyDrop::new(ChatModel::new()),
+
+                ChatMode::Study(mode)=>match mode{
+                    StudyMode::None=>{}
+
+                    StudyMode::Tutor=>ManuallyDrop::drop(&mut self.tutor),
+
+                    StudyMode::Homework=>ManuallyDrop::drop(&mut self.homework),
+                }
+
+                ChatMode::Game=>ManuallyDrop::drop(&mut self.game),
+
+                ChatMode::Playground=>ManuallyDrop::drop(&mut self.playground)
+            }
+        }
+    }
+
+    pub fn chat(&mut self)->&mut ChatModel{
+        unsafe{
+            &mut self.chat
+        }
+    }
+
+    pub fn game(&mut self)->&mut GameModel{
+        unsafe{
+            &mut self.game
+        }
+    }
+
+    pub fn homework(&mut self)->&mut HomeworkModel{
+        unsafe{
+            &mut self.homework
+        }
+    }
+
+    pub fn tutor(&mut self)->&mut TutorModel{
+        unsafe{
+            &mut self.tutor
+        }
+    }
+
+    pub fn playground(&mut self)->&mut PlaygroundModel{
+        unsafe{
+            &mut self.playground
         }
     }
 }
@@ -172,52 +139,24 @@ impl User{
 
 pub struct Chat{
     pub id:ChatId,
-    // flags:ChatFlags,
     pub state:ChatState,
-    history:Vec<History>,
-    pub user:User,
+    pub data:ModeData
 }
 
 impl Chat{
     pub fn new(id:ChatId)->Chat{
-        unsafe{
-            let c:[usize;2]=std::mem::transmute(ChatMode::ChatModeCount);
-
-            let mut history=Vec::with_capacity(c[0]);
-
-            for _ in 0..c[0]{
-                history.push(History::new())
-            }
-
-            Self{
-                id,
-                // flags:ChatFlags::new(),
-                state:ChatState::Initial(ChatAction::Greet),
-                history,
-                user:User::new()
-            }
-        }
-    }
-
-    pub fn history(&mut self)->&mut History{
-        if let ChatState::FullyFunctional(mode)=self.state{
-            let c:[usize;2]=unsafe{std::mem::transmute(mode)};
-            &mut self.history[c[0]]
-        }
-        else{
-            &mut self.history[0]
+        Self{
+            id,
+            state:ChatState::Initial,
+            data:ModeData::new()
         }
     }
 
     pub fn set_mode(&mut self,mode:ChatMode){
-        if let ChatState::FullyFunctional(_)=self.state{
-            self.state=ChatState::FullyFunctional(mode)
-        }
-    }
-
-    pub fn clear_all_history(&mut self){
-        for history in &mut self.history{
-            history.clear()
+        if let ChatState::FullyFunctional(current_mode)=&mut self.state{
+            self.data.clear(*current_mode);
+            *current_mode=mode;
+            self.data.set(*current_mode);
         }
     }
 }

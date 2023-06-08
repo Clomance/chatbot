@@ -1,9 +1,29 @@
+use crate::{
+    chat::{
+        ChatMode,
+        Chat,
+        ChatState,
+        StudyMode
+    },
+    model::{
+        GameHandler,
+        TutorHandler,
+        ChatHandler,
+        HomeworkHandler,
+        PlaygroundHandler
+    }
+};
+
 use std::sync::Arc;
+
 use tokio::sync::Mutex;
 
-use teloxide_core::{Bot, requests::Requester};
+use teloxide_core::{
+    Bot,
+    requests::Requester
+};
 
-use crate::{chat::{ChatMode, Chat, TutorMode, ChatState}};
+
 
 pub struct CommandCallbackHandler{
     bot:Bot,
@@ -21,53 +41,49 @@ impl CommandCallbackHandler{
     pub async fn handle(self,callback:&str){
         let mut chat=self.chat.lock().await;
 
-        match callback{
-            // Initial
-            "sexmale"=>{
-                chat.user.sex=true;
-                chat.state=ChatState::FullyFunctional(ChatMode::Chatting);
-                self.bot.send_message(chat.id,"Приятно познакомиться. Тебе предоставлен полный режим").await.unwrap();
+        match chat.state{
+            ChatState::Initial=>match callback{
+                "start"=>{
+                    chat.state=ChatState::FullyFunctional(ChatMode::Chat);
+                    self.bot.send_message(chat.id,"Напиши что-нибудь").await.unwrap();
+                }
+
+                _=>{}
             }
 
-            "sexfemale"=>{
-                chat.user.sex=false;
-                chat.state=ChatState::FullyFunctional(ChatMode::Chatting);
-                self.bot.send_message(chat.id,"Приятно познакомиться. Тебе предоставлен полный режим").await.unwrap();
+            ChatState::PartiallyFunctional=>{}
+
+            ChatState::FullyFunctional(mode)=>match mode{
+                ChatMode::Chat=>ChatHandler::new(self.bot,&mut chat).handle_command_callback(callback).await,
+
+                ChatMode::Study(mode)=>match mode{
+                    StudyMode::None=>{
+                        match callback{
+                            "tutor"=>{
+                                chat.set_mode(ChatMode::Study(StudyMode::Tutor));
+
+                                TutorHandler::new(self.bot,&mut chat).handle_command_callback(callback).await
+                            }
+
+                            "homework"=>{
+                                chat.set_mode(ChatMode::Study(StudyMode::Homework));
+
+                                HomeworkHandler::new(self.bot,&mut chat).handle_command_callback(callback).await
+                            }
+
+                            _=>{}
+                        }
+                    }
+
+                    StudyMode::Tutor=>TutorHandler::new(self.bot,&mut chat).handle_command_callback(callback).await,
+
+                    StudyMode::Homework=>HomeworkHandler::new(self.bot,&mut chat).handle_command_callback(callback).await,
+                }
+
+                ChatMode::Game=>GameHandler::new(self.bot,&mut chat).handle_command_callback(&callback).await,
+
+                ChatMode::Playground=>PlaygroundHandler::new(self.bot,&mut chat).handle_command_callback(callback).await
             }
-
-
-            // FullyFunctional
-            "math"=>{
-                chat.set_mode(ChatMode::Tutor(TutorMode::Math));
-                self.bot.send_message(chat.id,"Ты выбрал математику. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
-
-            "english"=>{
-                chat.set_mode(ChatMode::Tutor(TutorMode::English));
-                self.bot.send_message(chat.id,"Ты выбрал английский язык. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
-
-            "finance"=>{
-                chat.set_mode(ChatMode::Tutor(TutorMode::Finance));
-                self.bot.send_message(chat.id,"Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
-
-            "astronomy"=>{
-                chat.set_mode(ChatMode::Tutor(TutorMode::Astronomy));
-                self.bot.send_message(chat.id,"Ты выбрал астрономию. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
-
-            "enviroment"=>{
-                chat.set_mode(ChatMode::Tutor(TutorMode::Enviroment));
-                self.bot.send_message(chat.id,"Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
-
-            "selfcare"=>{
-                chat.set_mode(ChatMode::Tutor(TutorMode::SelfCare));
-                self.bot.send_message(chat.id,"Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
-
-            _=>{}
         }
     }
 }

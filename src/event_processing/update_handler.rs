@@ -1,11 +1,21 @@
-use std::{sync::{Arc}};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use teloxide_core::{types::{Update, UpdateKind}, Bot, requests::Requester};
+use teloxide_core::{
+    Bot,
+    requests::Requester,
+    types::{
+        Update,
+        UpdateKind
+    }
+};
 
-use crate::{chat::Chats};
+use crate::chat::Chats;
 
-use super::{CommandCallbackHandler, MessageHandler};
+use super::{
+    MessageHandler,
+    CommandCallbackHandler
+};
 
 pub struct UpdateHandler{
     bot:Bot,

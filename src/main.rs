@@ -1,11 +1,16 @@
 mod chat;
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::Duration
+};
 
 use chat::Chats;
 
 mod openai;
 
 mod event_processing;
+
+mod model;
 
 use teloxide_core::{
     Bot,
@@ -16,6 +21,7 @@ use teloxide_core::{
         BotCommandScope
     }
 };
+
 use tokio::sync::Mutex;
 
 use crate::event_processing::UpdateHandler;
@@ -28,9 +34,9 @@ const BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 
 #[tokio::main]
 async fn main(){
-    let bot=Bot::new(BOT_TOKEN);
-
     println!("BotStart");
+
+    let bot=Bot::new(BOT_TOKEN);
 
     let mut delete=bot.delete_my_commands();
     delete.scope=Some(BotCommandScope::Default);
@@ -38,17 +44,20 @@ async fn main(){
 
     bot.set_my_commands(
         vec![
-            BotCommand::new("chatting","Болтовня"),
-            BotCommand::new("studying","Учёба"),
+            BotCommand::new("chat","Простое общение"),
+            BotCommand::new("study","Учёба"),
             BotCommand::new("game","Игры"),
             BotCommand::new("playground","Свободный режим"),
-            BotCommand::new("settings","Настройки")
+            BotCommand::new("settings","Настройки"),
+            BotCommand::new("profile","Профиль"),
         ]
     ).await.unwrap();
 
     println!("CommandsSet");
 
     let chats=Arc::new(Mutex::new(Chats::new()));
+
+    println!("UpdateLoopStart");
 
     let mut last_update_id=None;
     loop{
