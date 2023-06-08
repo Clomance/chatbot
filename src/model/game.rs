@@ -1,10 +1,13 @@
 use crate::{
+    prompt::Prompt,
     openai::OpenAIWrapper,
     chat::{
         Chat,
         History
     }
 };
+
+use serde_json::Value;
 
 use teloxide_core::{
     Bot,
@@ -19,11 +22,20 @@ use teloxide_core::{
 
 
 
+const GREETING:&'static str="\
+Давай поиграем! Игры - это отличный способ развеяться, отвлечься от рутины и как это говорят сегодня - \"перезагрузиться\"). \
+Научно доказано, что игры помогают нам проще воспринимать и познавать окружающий мир, а знания, полученные в игровой форме, лучше усваиваются и с легкостью применяются в жизни. \
+На \"умном\" это звучит \"геймификация\" - gamification.\
+";
+
+
+
 pub enum GameMode{
     None,
 
     RiddleGame{
-        riddle:String
+        riddle:String,
+        answer:String
     },
 
     InsterestingFacts,
@@ -43,13 +55,33 @@ pub enum GameMode{
     }
 }
 
+impl GameMode{
+    pub fn riddle(riddle:&str,answer:&str)->GameMode{
+        GameMode::RiddleGame{
+            riddle:String::from(riddle),
+            answer:String::from(answer)
+        }
+    }
+
+    pub fn quiz(quiz:&str)->GameMode{
+        GameMode::QuizGame{quiz:String::from(quiz)}
+    }
+
+    pub fn guessing(guess:&str)->GameMode{
+        GameMode::GuessingGame{guess:String::from(guess)}
+    }
+
+    pub fn fairy_tales(fairy_tale:&str)->GameMode{
+        GameMode::FairyTales{theme:String::from(fairy_tale)}
+    }
+}
+
 
 
 pub struct GameModel{
     history:History,
     mode:GameMode
 }
-
 
 impl GameModel{
     pub fn new()->GameModel{
@@ -80,9 +112,23 @@ impl<'c> GameHandler<'c>{
             "game"=>{
                 self.chat.data.game().mode=GameMode::None;
 
-                let mut send_message=self.bot.send_message(self.chat.id,"Выбери то, чем хочешь заняться.");
+                let mut send_message=self.bot.send_message(self.chat.id,GREETING);
                 send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(game_buttons()));
                 send_message.await.unwrap();
+            }
+
+            "gamerepeat"=>{
+                self.chat.data.game().mode=GameMode::None;
+
+                let mut send_message=self.bot.send_message(self.chat.id,"Игровое меню");
+                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(game_buttons()));
+                send_message.await.unwrap();
+            }
+
+            "reset"=>{
+                self.chat.data.game().history.clear();
+
+                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
             }
 
             _=>{}
@@ -92,66 +138,94 @@ impl<'c> GameHandler<'c>{
     pub async fn handle_command_callback(&mut self,callback:&str){
         let data=self.chat.data.game();
 
+        data.history.clear();
+
         match callback{
+            // При выборе режима загадок
             "riddlegame"=>{
-                // data.mode=GameMode::RiddleGame;
-                self.bot.send_message(self.chat.id,"Ты выбрал загадки. Давай начнём. Напиши что-нибудь").await.unwrap();
-            }
+                data.mode=GameMode::riddle("","");
 
-            "insterestingfacts"=>{
-                data.mode=GameMode::InsterestingFacts;
-
-                let next_button=InlineKeyboardButton::new(
-                    "Интересный факт",
-                    InlineKeyboardButtonKind::CallbackData("insterestingfactsnext".into())
-                );
-
-                let mut send_message=self.bot.send_message(self.chat.id,"Ты выбрал интересные факты. Нажми ниже кнопку, чтобы начать");
-
-                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(InlineKeyboardMarkup::new(vec![vec![next_button]])));
-
+                let mut send_message=self.bot.send_message(self.chat.id,"Отлично! Загадки очень хороший способ поиграть с пользой.");
+                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(new_riddle_keyboard()));
                 send_message.await.unwrap();
             }
 
+            // При нажатии на кнопку "Новая загадка"
+            "riddlegamenew"=>{
+                let prompt=Prompt::load("prompts/game/riddle/riddle.json").await;
+
+                let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+
+                let response:Value=serde_json::from_str(&response).unwrap();
+
+                let riddle=response["riddle"].as_str().unwrap();
+                let answer=response["answer"].as_str().unwrap();
+
+                data.mode=GameMode::riddle(riddle,answer);
+
+                self.bot.send_message(self.chat.id,riddle).await.unwrap();
+            }
+
+            // При выборе режима интересных фактов
+            "insterestingfacts"=>{
+                data.mode=GameMode::InsterestingFacts;
+
+                let mut send_message=self.bot.send_message(self.chat.id,"Ты выбрал интересные факты. Нажми ниже кнопку, чтобы начать");
+                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(new_fact_keyboard()));
+                send_message.await.unwrap();
+            }
+
+            // При нажатии на кнопку "Интересный факт"
             "insterestingfactsnext"=>{
-                let prompt=std::fs::read_to_string("prompts/game/insterestingfacts.json").unwrap().replace('\n',"");
+                let prompt=Prompt::load("prompts/game/insterestingfacts.json").await;
 
-                let messages=[prompt];
-
-                let response=OpenAIWrapper::send_chat(&messages,1024);
-
-                let next_button=InlineKeyboardButton::new(
-                    "Интересный факт",
-                    InlineKeyboardButtonKind::CallbackData("insterestingfactsnext".into())
-                );
+                let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
 
                 let mut send_message=self.bot.send_message(self.chat.id,response);
-
-                send_message.reply_markup=Some(
-                    ReplyMarkup::InlineKeyboard(InlineKeyboardMarkup::new(vec![vec![next_button]]))
-                );
-
+                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(new_fact_keyboard()));
                 send_message.await.unwrap();
             }
 
             "quizgame"=>{
-                // chat.set_mode(ChatMode::Game(GameMode::QuizGame));
-                self.bot.send_message(self.chat.id,"Ты выбрал викторину. Давай начнём. Напиши что-нибудь").await.unwrap();
+                data.mode=GameMode::quiz("");
+
+                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
+
+                // self.bot.send_message(self.chat.id,"Ты выбрал викторину. Давай начнём. Напиши что-нибудь").await.unwrap();
             }
 
             "guessinggame"=>{
-                // chat.set_mode(ChatMode::Game(GameMode::GuessingGame));
-                self.bot.send_message(self.chat.id,"Ты выбрал угадайку. Давай начнём. Напиши что-нибудь").await.unwrap();
+                data.mode=GameMode::guessing("");
+
+                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
+
+                // self.bot.send_message(self.chat.id,"Ты выбрал угадайку. Давай начнём. Напиши что-нибудь").await.unwrap();
             }
 
             "tonguetwisters"=>{
-                // chat.set_mode(ChatMode::Game(GameMode::TongueTwisters));
-                self.bot.send_message(self.chat.id,"Ты выбрал скороговорки. Давай начнём. Напиши что-нибудь").await.unwrap();
+                data.mode=GameMode::TongueTwisters;
+
+                let mut send_message=self.bot.send_message(self.chat.id,"Ты выбрал скороговорки. Давай начнём. Напиши что-нибудь");
+                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(new_tongue_twisters()));
+                send_message.await.unwrap();
+            }
+
+            "tonguetwistersnext"=>{
+                let prompt=Prompt::load("prompts/game/tonguetwisters.json").await;
+
+                let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+
+                let mut send_message=self.bot.send_message(self.chat.id,response);
+                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(new_tongue_twisters()));
+                send_message.await.unwrap();
             }
 
             "fairytales"=>{
-                // chat.set_mode(ChatMode::Game(GameMode::FairyTales));
-                self.bot.send_message(self.chat.id,"Ты выбрал сказки. Давай начнём. Напиши что-нибудь").await.unwrap();
+                data.mode=GameMode::fairy_tales("");
+
+                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
+
+                // self.bot.send_message(self.chat.id,"Ты выбрал сказки. Давай начнём. Напиши что-нибудь").await.unwrap();
             }
 
             _=>{}
@@ -162,63 +236,65 @@ impl<'c> GameHandler<'c>{
         let mut messages=Vec::new();
 
         let data=self.chat.data.game();
-        data.history.clear();
 
         match data.mode{
-            GameMode::None=>{
-                return
-            }
+            GameMode::None=>{}
 
-            GameMode::RiddleGame{ref riddle}=>{
-                let prompt=std::fs::read_to_string("prompts/game/game.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+            GameMode::RiddleGame{ref mut riddle,ref mut answer}=>{
+                if riddle.is_empty(){
+                    self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы начать играть").await.unwrap();
+                }
+                else{
+                    let mut prompt=Prompt::load("prompts/game/riddle/guess.json").await;
+
+                    prompt.replace("{riddle}",&riddle);
+                    prompt.replace("{answer}",&answer);
+                    prompt.replace("{guess}",&message);
+
+                    messages.push(prompt.text);
+
+                    let response=OpenAIWrapper::send_chat(&messages,1024);
+
+                    let response:Value=serde_json::from_str(&response).unwrap();
+
+                    let result=response["result"].to_string();
+                    let message=response["message"].as_str().unwrap();
+
+                    if result=="true"{
+                        data.mode=GameMode::riddle("","");
+
+                        let mut send_message=self.bot.send_message(self.chat.id,message);
+
+                        send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(new_riddle_keyboard()));
+
+                        send_message.await.unwrap();
+                    }
+                    else{
+                        self.bot.send_message(self.chat.id,message).await.unwrap();
+                    }
+                }
             }
 
             GameMode::InsterestingFacts=>{
-                // let prompt=std::fs::read_to_string("prompts/game/game.json").unwrap().replace('\n',"");
-                // messages.push(prompt)
+                self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы узнать интересный факт").await.unwrap();
             }
 
-            GameMode::QuizGame{ref quiz}=>{
-                let prompt=std::fs::read_to_string("prompts/game/game.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+            GameMode::QuizGame{ref mut quiz}=>{
+                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
             }
 
-            GameMode::GuessingGame{ref guess}=>{
-                let prompt=std::fs::read_to_string("prompts/game/game.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+            GameMode::GuessingGame{ref mut guess}=>{
+                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
             }
 
             GameMode::TongueTwisters=>{
-                let prompt=std::fs::read_to_string("prompts/game/game.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы получить скороговорку").await.unwrap();
             }
 
-            GameMode::FairyTales{ref theme}=>{
-                let prompt=std::fs::read_to_string("prompts/game/game.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+            GameMode::FairyTales{ref mut theme}=>{
+                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
             }
         }
-
-        data.history.push_request(message);
-
-        for message in data.history.messages().iter(){
-            messages.push(message.to_string())
-        }
-
-        let response=OpenAIWrapper::send_chat(&messages,1024);
-
-        println!("Response: {}",response);
-
-        data.history.push_response(
-            &response
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t")
-        );
-
-        self.bot.send_message(self.chat.id,response).await.unwrap();
     }
 }
 
@@ -267,4 +343,35 @@ pub fn game_buttons()->InlineKeyboardMarkup{
     InlineKeyboardMarkup{
         inline_keyboard:inline_buttons
     }
+}
+
+
+
+pub fn new_riddle_keyboard()->InlineKeyboardMarkup{
+    let next_button=InlineKeyboardButton::new(
+        "Новая загадка",
+        InlineKeyboardButtonKind::CallbackData("riddlegamenew".into())
+    );
+
+    InlineKeyboardMarkup::new(vec![vec![next_button]])
+}
+
+
+pub fn new_fact_keyboard()->InlineKeyboardMarkup{
+    let next_button=InlineKeyboardButton::new(
+        "Интересный факт",
+        InlineKeyboardButtonKind::CallbackData("insterestingfactsnext".into())
+    );
+
+    InlineKeyboardMarkup::new(vec![vec![next_button]])
+}
+
+
+pub fn new_tongue_twisters()->InlineKeyboardMarkup{
+    let next_button=InlineKeyboardButton::new(
+        "Скороговорка",
+        InlineKeyboardButtonKind::CallbackData("tonguetwistersnext".into())
+    );
+
+    InlineKeyboardMarkup::new(vec![vec![next_button]])
 }

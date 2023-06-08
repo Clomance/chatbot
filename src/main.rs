@@ -9,8 +9,11 @@ use chat::Chats;
 mod openai;
 
 mod event_processing;
+use event_processing::UpdateHandler;
 
 mod model;
+
+mod prompt;
 
 use teloxide_core::{
     Bot,
@@ -24,11 +27,9 @@ use teloxide_core::{
 
 use tokio::sync::Mutex;
 
-use crate::event_processing::UpdateHandler;
 
 
-
-const BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
+const TELEGRAM_BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 
 
 
@@ -36,7 +37,7 @@ const BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 async fn main(){
     println!("BotStart");
 
-    let bot=Bot::new(BOT_TOKEN);
+    let bot=Bot::new(TELEGRAM_BOT_TOKEN);
 
     let mut delete=bot.delete_my_commands();
     delete.scope=Some(BotCommandScope::Default);
@@ -48,6 +49,7 @@ async fn main(){
             BotCommand::new("study","Учёба"),
             BotCommand::new("game","Игры"),
             BotCommand::new("playground","Свободный режим"),
+            BotCommand::new("reset","Очистить историю"),
             BotCommand::new("settings","Настройки"),
             BotCommand::new("profile","Профиль"),
         ]
@@ -80,9 +82,7 @@ async fn main(){
             let bot=bot.clone();
             let chats=chats.clone();
 
-            tokio::spawn(async move{
-                UpdateHandler::new(bot,update,chats).handle().await
-            });
+            tokio::spawn(UpdateHandler::new(bot,update,chats).handle());
         }
 
         tokio::time::sleep(Duration::from_millis(100)).await;

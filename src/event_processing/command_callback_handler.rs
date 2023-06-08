@@ -18,10 +18,7 @@ use std::sync::Arc;
 
 use tokio::sync::Mutex;
 
-use teloxide_core::{
-    Bot,
-    requests::Requester
-};
+use teloxide_core::Bot;
 
 
 
@@ -45,7 +42,8 @@ impl CommandCallbackHandler{
             ChatState::Initial=>match callback{
                 "start"=>{
                     chat.state=ChatState::FullyFunctional(ChatMode::Chat);
-                    self.bot.send_message(chat.id,"Напиши что-нибудь").await.unwrap();
+
+                    ChatHandler::new(self.bot,&mut chat).handle_command_callback(callback).await;
                 }
 
                 _=>{}

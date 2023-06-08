@@ -1,9 +1,10 @@
 use crate::{
+    prompt::Prompt,
     openai::OpenAIWrapper,
     chat::{
         Chat,
         History
-    }
+    },
 };
 
 use teloxide_core::{
@@ -13,15 +14,26 @@ use teloxide_core::{
 
 
 
-pub struct HomeworkModel{
-    history:History
-}
+const GREETING:&'static str="\
+Домашнее задание может показаться скучной рутиной, но это неотъемлемая часть закрепления новых знаний, полученных в школе. \
+Однако я постараюсь помочь тебе сделать данный процесс более увлекательным и по мере своих возможностей объясню тебе решение некоторых задач. \
+Также могу помочь тебе с написание эссе, сочинения либо короткой статьи на любую интересующую тебя тему. \
+Также могу помочь с созданием презентаций.
+Напиши сюда текстом домашнее задание на любую тему (например вопрос по окружающему миру, математике, биологии).\
+";
 
+
+
+pub struct HomeworkModel{
+    history:History,
+    homework:String
+}
 
 impl HomeworkModel{
     pub fn new()->HomeworkModel{
         Self{
-            history:History::new()
+            history:History::new(),
+            homework:String::new()
         }
     }
 }
@@ -43,8 +55,10 @@ impl<'c> HomeworkHandler<'c>{
 
     pub async fn handle_command(&mut self,command:&str){
         match command{
-            "homework"=>{
-                self.bot.send_message(self.chat.id,"Здесь мы можем просто пообщаться").await.unwrap();
+            "reset"=>{
+                self.chat.data.homework().history.clear();
+
+                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
             }
 
             _=>{}
@@ -53,6 +67,10 @@ impl<'c> HomeworkHandler<'c>{
 
     pub async fn handle_command_callback(&mut self,callback:&str){
         match callback{
+            "homework"=>{
+                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+            }
+
             _=>{}
         }
     }
@@ -64,8 +82,8 @@ impl<'c> HomeworkHandler<'c>{
 
         data.history.push_request(message);
 
-        let prompt=std::fs::read_to_string("prompts/study/homework/homework.json").unwrap().replace('\n',"");
-        messages.push(prompt);
+        let prompt=Prompt::load("prompts/study/homework/homework.json").await;
+        messages.push(prompt.text);
 
         for message in data.history.messages().iter(){
             messages.push(message.to_string())
@@ -75,13 +93,7 @@ impl<'c> HomeworkHandler<'c>{
 
         println!("Response: {}",response);
 
-        data.history.push_response(
-            &response
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t")
-        );
+        data.history.push_response(&response);
 
         self.bot.send_message(self.chat.id,response).await.unwrap();
     }

@@ -1,0 +1,4 @@
+{
+    "role":"user",
+    "content":"You are a native russian.Make a simple riddle in russian language. Make a JSON-formated response. Add a 'riddle' field to the response and write there your riddle. Add a 'answer' field to the response and write there the answer of riddle. Dont add anything else."
+}

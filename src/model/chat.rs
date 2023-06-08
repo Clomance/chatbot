@@ -1,4 +1,5 @@
 use crate::{
+    prompt::Prompt,
     openai::OpenAIWrapper,
     chat::{
         Chat,
@@ -13,10 +14,18 @@ use teloxide_core::{
 
 
 
+const GREETING:&'static str="\
+Привет, дорогой! Меня создавали в первую очередь быть твоим верным другом. \
+Я могу выслушать тебя, дать совет, подбодрить, поговорить с тобой на любые волнующие тебя темы.
+
+Что ты хочешь обсудить, о чем хочешь рассказать?\
+";
+
+
+
 pub struct ChatModel{
     history:History
 }
-
 
 impl ChatModel{
     pub fn new()->ChatModel{
@@ -44,7 +53,13 @@ impl<'c> ChatHandler<'c>{
     pub async fn handle_command(&mut self,command:&str){
         match command{
             "chat"=>{
-                self.bot.send_message(self.chat.id,"Здесь мы можем просто пообщаться").await.unwrap();
+                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+            }
+
+            "reset"=>{
+                self.chat.data.chat().history.clear();
+
+                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
             }
 
             _=>{}
@@ -53,6 +68,10 @@ impl<'c> ChatHandler<'c>{
 
     pub async fn handle_command_callback(&mut self,callback:&str){
         match callback{
+            "start"=>{
+                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+            }
+
             _=>{}
         }
     }
@@ -62,8 +81,8 @@ impl<'c> ChatHandler<'c>{
 
         let data=self.chat.data.chat();
 
-        let prompt=std::fs::read_to_string("prompts/chat.json").unwrap().replace('\n',"");
-        messages.push(prompt);
+        let prompt=Prompt::load("prompts/chat.json").await;
+        messages.push(prompt.text);
 
         data.history.push_request(message);
 
@@ -75,13 +94,7 @@ impl<'c> ChatHandler<'c>{
 
         println!("Response: {}",response);
 
-        data.history.push_response(
-            &response
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t")
-        );
+        data.history.push_response(&response);
 
         self.bot.send_message(self.chat.id,response).await.unwrap();
     }

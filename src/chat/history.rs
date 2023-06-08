@@ -20,6 +20,14 @@ impl History{
     }
 
     pub fn push_request(&mut self,request:&str){
+        let request=request
+            .replace("\\\"","\"")
+            .replace("\"","\\\"")
+            .replace("\r\n","\\n")
+            .replace("\n","\\n")
+            .replace("\r","\\r")
+            .replace("\t","\\t");
+
         let message=format!("{{\"role\":\"user\",\"content\":\"{}\"}}",request);
 
         let tokens=gpt_encoder::Encoder::new().encode(message.clone());
@@ -31,6 +39,14 @@ impl History{
     }
 
     pub fn push_response(&mut self,response:&str){
+        let response=response
+            .replace("\\\"","\"")
+            .replace("\"","\\\"")
+            .replace("\r\n","\\n")
+            .replace("\n","\\n")
+            .replace("\r","\\r")
+            .replace("\t","\\t");
+
         let message=format!("{{\"role\":\"assistant\",\"content\":\"{}\"}}",response);
 
         let tokens=gpt_encoder::Encoder::new().encode(message.clone());

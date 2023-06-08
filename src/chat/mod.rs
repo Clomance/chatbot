@@ -21,7 +21,7 @@ use teloxide_core::types::ChatId;
 
 
 
-pub const HISTORY_TOKEN_LIMIT:usize=2000;
+pub const HISTORY_TOKEN_LIMIT:usize=2500;
 
 
 

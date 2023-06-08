@@ -20,65 +20,65 @@ const API_KEY:&'static str="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"
 pub struct OpenAI;
 
 impl OpenAI{
-    pub fn send_prompt<S:AsRef<str>>(prompt:&S,max_tokens:u16)->Option<String>{
-        Self::send_prompt_array(&[prompt],max_tokens).pop()
-    }
+    // pub fn send_prompt<S:AsRef<str>>(prompt:&S,max_tokens:u16)->Option<String>{
+    //     Self::send_prompt_array(&[prompt],max_tokens).pop()
+    // }
 
-    pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S],max_tokens:u16)->Vec<String>{
-        let url="https://api.openai.com/v1/completions";
+    // pub fn send_prompt_array<S:AsRef<str>>(prompts:&[S],max_tokens:u16)->Vec<String>{
+    //     let url="https://api.openai.com/v1/completions";
 
-        let mut payload=format!("\
-            {{\
-                \"model\":\"text-davinci-003\",\
-                \"max_tokens\":{max_tokens},\
-                \"best_of\":2,\
-                \"prompt\":[\
-        ");
+    //     let mut payload=format!("\
+    //         {{\
+    //             \"model\":\"text-davinci-003\",\
+    //             \"max_tokens\":{max_tokens},\
+    //             \"best_of\":2,\
+    //             \"prompt\":[\
+    //     ");
 
-        for prompt in prompts{
-            payload.push('\"');
-            payload.push_str(prompt.as_ref());
-            payload.push('\"');
-            payload.push(',');
-        }
+    //     for prompt in prompts{
+    //         payload.push('\"');
+    //         payload.push_str(prompt.as_ref());
+    //         payload.push('\"');
+    //         payload.push(',');
+    //     }
 
-        if !prompts.is_empty(){
-            payload.pop();
-        }
+    //     if !prompts.is_empty(){
+    //         payload.pop();
+    //     }
 
-        payload.push_str("]}");
+    //     payload.push_str("]}");
 
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
-            .header("Authorization",format!("Bearer {API_KEY}"))
-            .header("Content-Type","application/json;charset=utf-8")
-            .body(Text(payload))
-            .connect_timeout(Duration::from_secs(1200))
-            .read_timeout(Duration::from_secs(1200))
-            .send().unwrap();
+    //     let response=attohttpc::post(url)
+    //         .timeout(Duration::from_secs(1200))
+    //         .header("Authorization",format!("Bearer {API_KEY}"))
+    //         .header("Content-Type","application/json;charset=utf-8")
+    //         .body(Text(payload))
+    //         .connect_timeout(Duration::from_secs(1200))
+    //         .read_timeout(Duration::from_secs(1200))
+    //         .send().unwrap();
 
-        let text=response.text_utf8().unwrap();
+    //     let text=response.text_utf8().unwrap();
 
-        let mut payload:Value=serde_json::from_str(&text).unwrap();
+    //     let mut payload:Value=serde_json::from_str(&text).unwrap();
 
-        let usage=&payload["usage"];
-        println!("{usage:?}");
+    //     let usage=&payload["usage"];
+    //     println!("{usage:?}");
 
-        let Some(choices)=payload["choices"].as_array_mut() else {return Vec::new()};
+    //     let Some(choices)=payload["choices"].as_array_mut() else {return Vec::new()};
 
-        let mut messages=Vec::with_capacity(choices.len());
+    //     let mut messages=Vec::with_capacity(choices.len());
 
-        for choice in choices{
-            match choice["text"].take(){
-                Value::String(message)=>{
-                    messages.push(message)
-                }
-                _=>{}
-            }
-        }
+    //     for choice in choices{
+    //         match choice["text"].take(){
+    //             Value::String(message)=>{
+    //                 messages.push(message)
+    //             }
+    //             _=>{}
+    //         }
+    //     }
 
-        messages
-    }
+    //     messages
+    // }
 
     pub fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<String>{
         let url="https://api.openai.com/v1/chat/completions";
@@ -101,7 +101,7 @@ impl OpenAI{
 
         payload.push_str("]}");
 
-        println!("{payload}");
+        println!("OpenAI request: {payload}");
 
         let response=attohttpc::post(url)
             .timeout(Duration::from_secs(1200))
@@ -112,11 +112,11 @@ impl OpenAI{
             .read_timeout(Duration::from_secs(1200))
             .send().unwrap();
 
-        let text=response.text_utf8().unwrap();
+        let response=response.text_utf8().unwrap();
 
-        println!("{}",text);
+        println!("OpenAI response: {response}");
 
-        let payload:Value=serde_json::from_str(&text).unwrap();
+        let payload:Value=serde_json::from_str(&response).unwrap();
 
         let Some(choices)=payload["choices"].as_array() else {return None};
 

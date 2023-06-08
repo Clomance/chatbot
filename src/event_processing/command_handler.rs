@@ -31,12 +31,12 @@ use teloxide_core::{
 
 
 
-const START_TEXT:&'static str="\
+const GREETING:&'static str="\
 Приветствуем Вас в чат-боте GPTkids!😌
 
 Это не просто бот, а полноценная площадка для детского развития, получения новых знаний в игровой форме и общения с нейросетью.
 
-GPTKids разработан с компонентом ChatGPT (нейросеть от OpenAi) специально для детей 6-12 лет и их родителей. Хотя полезен он будет всем вне зависимости от возраста!😉
+GPTKids разработан с компонентом ChatGPT (нейросеть от OpenAI) специально для детей 6-12 лет и их родителей. Хотя полезен он будет всем вне зависимости от возраста!😉
 
 Уже сейчас GPTkids может быть репетитором по следующим направлениям:
  • английский язык;
@@ -50,9 +50,7 @@ GPTKids разработан с компонентом ChatGPT (нейросет
 
 Мы уверены, что GPTKids станет верным другом и помощником для вашего ребенка!
 
-С уважением, команда 8bit NFT Studio!🤓
-
-КНОПКА \"СТАРТ\"\
+С уважением, команда 8bit NFT Studio!🤓\
 ";
 
 
@@ -98,7 +96,7 @@ impl CommandHandler{
                             println!("No args")
                         }
 
-                        let mut send_message=self.bot.send_message(chat.id,START_TEXT);
+                        let mut send_message=self.bot.send_message(chat.id,GREETING);
 
                         let start=InlineKeyboardButton::new(
                             "Старт",
@@ -161,22 +159,17 @@ impl CommandHandler{
 
                     // Перейти в режим 'Учёба'
                     "study"=>{
-                        if let ChatMode::Study(_)=mode{
-                            self.bot.send_message(chat.id,THE_CHOSEN_MODE_IS_THE_CURRENT).await.unwrap();
-                        }
-                        else{
-                            chat.set_mode(ChatMode::Study(StudyMode::None));
+                        chat.set_mode(ChatMode::Study(StudyMode::None));
 
-                            let mut send_message=self.bot.send_message(chat.id,"Выбери то, чем хочешь заняться.");
-                            send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(study_buttons()));
-                            send_message.await.unwrap();
-                        }
+                        let mut send_message=self.bot.send_message(chat.id,"Выбери режим");
+                        send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(study_buttons()));
+                        send_message.await.unwrap();
                     }
 
                     // Перейти в режим 'Игры'
                     "game"=>{
                         if let ChatMode::Game=mode{
-                            self.bot.send_message(chat.id,THE_CHOSEN_MODE_IS_THE_CURRENT).await.unwrap();
+                            GameHandler::new(self.bot,&mut chat).handle_command("gamerepeat").await
                         }
                         else{
                             chat.set_mode(ChatMode::Game);
@@ -207,6 +200,7 @@ impl CommandHandler{
                         self.bot.send_message(chat.id,"Данный раздел пока недоступен").await.unwrap();
                     }
 
+                    // Остальные команды ("reset")
                     _=>match mode{
                         ChatMode::Chat=>ChatHandler::new(self.bot,&mut chat).handle_command(command).await,
 

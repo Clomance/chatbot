@@ -1,9 +1,10 @@
 use crate::{
+    prompt::Prompt,
     openai::OpenAIWrapper,
     chat::{
         Chat,
         History
-    }
+    },
 };
 
 
@@ -17,6 +18,49 @@ use teloxide_core::{
         ReplyMarkup
     }
 };
+
+
+
+const GREETING:&'static str="\
+Отлично! Я искусственный интеллект, но могу стать твоим верным помощником в постижении полезных знаний, изучении языков, математики, физики, астрономии, обсудить интересные научные факты.
+
+Выбери темы, знания о которых тебе сейчас нужны:\
+";
+
+const MATH_GREETING:&'static str="\
+Математика - царица наук, благодаря инструментам которой, функционируют и другие, точные науки. \
+Она пригодится тебе всегда и везде, чтобы ни говорили люди вокруг о ней.
+С чего начнем изучение математики? \
+Могу тебе помочь объяснить решение некоторых задач.\
+";
+
+const ENGLISH_GREETING:&'static str="\
+Hi there! Очень рад твоим стремлениям к изучениям языков! \
+Мы живем на одной большой Планете, однако история сложилась так, что в мире существуют более 7 тысяч языков, которые относятся к 142 языковым группам. \
+Английский по праву язык мира, так как распространен в большинстве стран. \
+Также и Я, твой друг, написан языком программирования с использованием команд на английском языке!
+Ну что же, Lets go!\
+";
+
+const FINANCE_GREETING:&'static str="\
+Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь\
+";
+
+const ASTRONOMY_GREETING:&'static str="\
+Прекрасно! Наверное, ничто не придавало столько энтузиазма в изучении науки, как изучение космоса. \
+Человек всегда стремился к звездам, изучению планет, космических объектов. \
+Человек ступил на Луну и уже сегодня готовятся миссии на ближайшие планеты Солнечной системы.
+
+Напиши, что ты хочешь узнать из раздела астрономии, о юный исследователь.\
+";
+
+const ENVIROMENT_GREETING:&'static str="\
+Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь\
+";
+
+const SELF_CARE_GREETING:&'static str="\
+Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь\
+";
 
 
 
@@ -36,7 +80,6 @@ pub struct TutorModel{
     history:History,
     mode:TutorMode
 }
-
 
 impl TutorModel{
     pub fn new()->TutorModel{
@@ -64,6 +107,12 @@ impl<'c> TutorHandler<'c>{
 
     pub async fn handle_command(&mut self,command:&str){
         match command{
+            "reset"=>{
+                self.chat.data.tutor().history.clear();
+
+                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
+            }
+
             _=>{}
         }
     }
@@ -75,39 +124,39 @@ impl<'c> TutorHandler<'c>{
 
         match callback{
             "tutor"=>{
-                let mut send_message=self.bot.send_message(self.chat.id,"Выбери то, чем хочешь заняться.");
+                let mut send_message=self.bot.send_message(self.chat.id,GREETING);
                 send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(tutor_buttons()));
                 send_message.await.unwrap();
             }
 
             "math"=>{
                 data.mode=TutorMode::Math;
-                self.bot.send_message(self.chat.id,"Ты выбрал математику. Давай начнём. Напиши что-нибудь").await.unwrap();
+                self.bot.send_message(self.chat.id,MATH_GREETING).await.unwrap();
             }
 
             "english"=>{
                 data.mode=TutorMode::English;
-                self.bot.send_message(self.chat.id,"Ты выбрал английский язык. Давай начнём. Напиши что-нибудь").await.unwrap();
+                self.bot.send_message(self.chat.id,ENGLISH_GREETING).await.unwrap();
             }
 
             "finance"=>{
                 data.mode=TutorMode::Finance;
-                self.bot.send_message(self.chat.id,"Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь").await.unwrap();
+                self.bot.send_message(self.chat.id,FINANCE_GREETING).await.unwrap();
             }
 
             "astronomy"=>{
                 data.mode=TutorMode::Astronomy;
-                self.bot.send_message(self.chat.id,"Ты выбрал астрономию. Давай начнём. Напиши что-нибудь").await.unwrap();
+                self.bot.send_message(self.chat.id,ASTRONOMY_GREETING).await.unwrap();
             }
 
             "enviroment"=>{
                 data.mode=TutorMode::Enviroment;
-                self.bot.send_message(self.chat.id,"Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь").await.unwrap();
+                self.bot.send_message(self.chat.id,ENVIROMENT_GREETING).await.unwrap();
             }
 
             "selfcare"=>{
                 data.mode=TutorMode::SelfCare;
-                self.bot.send_message(self.chat.id,"Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь").await.unwrap();
+                self.bot.send_message(self.chat.id,SELF_CARE_GREETING).await.unwrap();
             }
 
             _=>{}
@@ -125,33 +174,33 @@ impl<'c> TutorHandler<'c>{
             }
 
             TutorMode::Math=>{
-                let prompt=std::fs::read_to_string("prompts/study/tutor/math.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                let prompt=Prompt::load("prompts/study/tutor/math.json").await;
+                messages.push(prompt.text)
             }
 
             TutorMode::English=>{
-                let prompt=std::fs::read_to_string("prompts/study/tutor/english.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                let prompt=Prompt::load("prompts/study/tutor/english.json").await;
+                messages.push(prompt.text)
             }
 
             TutorMode::Finance=>{
-                let prompt=std::fs::read_to_string("prompts/study/tutor/finance.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                let prompt=Prompt::load("prompts/study/tutor/finance.json").await;
+                messages.push(prompt.text)
             }
 
             TutorMode::Astronomy=>{
-                let prompt=std::fs::read_to_string("prompts/study/tutor/astronomy.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                let prompt=Prompt::load("prompts/study/tutor/astronomy.json").await;
+                messages.push(prompt.text)
             }
 
             TutorMode::Enviroment=>{
-                let prompt=std::fs::read_to_string("prompts/study/tutor/enviroment.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                let prompt=Prompt::load("prompts/study/tutor/enviroment.json").await;
+                messages.push(prompt.text)
             }
 
             TutorMode::SelfCare=>{
-                let prompt=std::fs::read_to_string("prompts/study/tutor/selfcare.json").unwrap().replace('\n',"");
-                messages.push(prompt)
+                let prompt=Prompt::load("prompts/study/tutor/selfcare.json").await;
+                messages.push(prompt.text)
             }
         }
 
@@ -165,13 +214,7 @@ impl<'c> TutorHandler<'c>{
 
         println!("Response: {}",response);
 
-        data.history.push_response(
-            &response
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t")
-        );
+        data.history.push_response(&response);
 
         self.bot.send_message(self.chat.id,response).await.unwrap();
     }

@@ -13,6 +13,12 @@ use teloxide_core::{
 
 
 
+const GREETING:&'static str="\
+Режим без ограничений\
+";
+
+
+
 pub struct PlaygroundModel{
     history:History
 }
@@ -44,7 +50,13 @@ impl<'c> PlaygroundHandler<'c>{
     pub async fn handle_command(&mut self,command:&str){
         match command{
             "playground"=>{
-                self.bot.send_message(self.chat.id,"Режим без ограничений").await.unwrap();
+                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+            }
+
+            "reset"=>{
+                self.chat.data.playground().history.clear();
+
+                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
             }
 
             _=>{}
@@ -72,13 +84,7 @@ impl<'c> PlaygroundHandler<'c>{
 
         println!("Response: {}",response);
 
-        data.history.push_response(
-            &response
-            .replace("\"","\\\"")
-            .replace("\n","\\n")
-            .replace("\r","\\r")
-            .replace("\t","\\t")
-        );
+        data.history.push_response(&response);
 
         self.bot.send_message(self.chat.id,response).await.unwrap();
     }
