@@ -4,7 +4,7 @@ use crate::{
     chat::{
         Chat,
         History
-    },
+    }
 };
 
 use teloxide_core::{
@@ -26,14 +26,14 @@ const GREETING:&'static str="\
 
 pub struct HomeworkModel{
     history:History,
-    homework:String
+    // homework:String
 }
 
 impl HomeworkModel{
     pub fn new()->HomeworkModel{
         Self{
             history:History::new(),
-            homework:String::new()
+            // homework:String::new()
         }
     }
 }

@@ -1,0 +1,4 @@
+{
+    "role":"user",
+    "content":"Lets play a guessing game.You've made a secret word.The secret word:{secret}.Make a JSON-formated response.Add a 'result' field to the response and write there 'true' if my guess is the secret word of the riddle otherwise write there 'false'. Add a 'message' field to the response and write there a hint if the 'result' field is 'true' write there congratulations otherwise write a hint. Use russian language to write the message."
+}

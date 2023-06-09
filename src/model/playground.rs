@@ -82,8 +82,6 @@ impl<'c> PlaygroundHandler<'c>{
 
         let response=OpenAIWrapper::send_chat(&messages,1024);
 
-        println!("Response: {}",response);
-
         data.history.push_response(&response);
 
         self.bot.send_message(self.chat.id,response).await.unwrap();

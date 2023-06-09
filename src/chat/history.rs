@@ -21,6 +21,8 @@ impl History{
 
     pub fn push_request(&mut self,request:&str){
         let request=request
+            .replace("\\","\\\\")
+            .replace("\"","\\\"")
             .replace("\\\"","\"")
             .replace("\"","\\\"")
             .replace("\r\n","\\n")
@@ -40,6 +42,8 @@ impl History{
 
     pub fn push_response(&mut self,response:&str){
         let response=response
+            .replace("\\","\\\\")
+            .replace("\"","\\\"")
             .replace("\\\"","\"")
             .replace("\"","\\\"")
             .replace("\r\n","\\n")

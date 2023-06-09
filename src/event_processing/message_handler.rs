@@ -21,7 +21,7 @@ use tokio::sync::Mutex;
 
 use teloxide_core::{
     Bot,
-    types::Message
+    types::Message, requests::Requester
 };
 
 
@@ -54,7 +54,9 @@ impl MessageHandler{
         let mut chat=self.chat.lock().await;
 
         match &mut chat.state{
-            ChatState::Initial=>{}
+            ChatState::Initial=>{
+                self.bot.send_message(chat.id,"Напиши /start, чтобы начать").await.unwrap();
+            }
 
             ChatState::PartiallyFunctional=>{}
 
