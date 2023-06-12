@@ -8,8 +8,8 @@ use chat::Chats;
 
 mod openai;
 
-mod event_processing;
-use event_processing::UpdateHandler;
+mod event;
+use event::UpdateHandler;
 
 mod model;
 

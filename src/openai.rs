@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use attohttpc::{
-    // MultipartBuilder,
-    // MultipartFile,
+    MultipartBuilder,
+    MultipartFile,
     body::Text
 };
 
@@ -214,6 +214,30 @@ impl OpenAI{
 
     //     vectors
     // }
+
+    pub fn send_voice(voice:&[u8])->String{
+        let url="https://api.openai.com/v1/audio/transcriptions";
+
+        let multipart=MultipartBuilder::new()
+            .with_file(MultipartFile::new("file",&voice).with_filename("voice.mp3").with_type("audio/mp3").unwrap())
+            .with_text("model","whisper-1")
+            .with_text("language","ru")
+            .build().unwrap();
+
+        let response=attohttpc::post(url)
+            .timeout(Duration::from_secs(1200))
+            .header("Authorization",format!("Bearer {API_KEY}"))
+            .body(multipart)
+            .send().unwrap();
+
+        let text=response.text_utf8().unwrap();
+
+        println!("OpenAI response: {}",text);
+
+        let payload:Value=serde_json::from_str(&text).unwrap();
+
+        payload["text"].as_str().unwrap().to_string()
+    }
 }
 
 
