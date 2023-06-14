@@ -1,4 +1,5 @@
 use crate::{
+    openai::OpenAI,
     event::CommandHandler,
     model::{
         GameHandler,
@@ -12,7 +13,7 @@ use crate::{
         ChatMode,
         ChatState,
         StudyMode
-    }, openai
+    }
 };
 
 use std::{
@@ -94,7 +95,7 @@ impl MessageHandler{
                         mp3_out_buffer.set_len(mp3_out_buffer.len().wrapping_add(encoded_size));
                     }
 
-                    text=openai::OpenAI::send_voice(&mp3_out_buffer);
+                    text=OpenAI::send_voice(&mp3_out_buffer);
 
                     println!("{}",text);
 

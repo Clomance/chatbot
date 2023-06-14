@@ -8,6 +8,8 @@ use chat::Chats;
 
 mod openai;
 
+mod yandex;
+
 mod event;
 use event::UpdateHandler;
 
@@ -25,11 +27,11 @@ use teloxide_core::{
     }
 };
 
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 
 
-const TELEGRAM_BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
+const TELEGRAM_BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0"; // 6058214276:AAFzDlKUr33C3In7jMM5cz6kUDqh85OzFqE
 
 
 
@@ -57,7 +59,7 @@ async fn main(){
 
     println!("CommandsSet");
 
-    let chats=Arc::new(Mutex::new(Chats::new()));
+    let chats=Arc::new(RwLock::new(Chats::new()));
 
     println!("UpdateLoopStart");
 

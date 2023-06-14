@@ -1,5 +1,13 @@
+use crate::chat::Chats;
+
+use super::{
+    MessageHandler,
+    CommandCallbackHandler
+};
+
 use std::sync::Arc;
-use tokio::sync::Mutex;
+
+use tokio::sync::RwLock;
 
 use teloxide_core::{
     Bot,
@@ -10,21 +18,16 @@ use teloxide_core::{
     }
 };
 
-use crate::chat::Chats;
 
-use super::{
-    MessageHandler,
-    CommandCallbackHandler
-};
 
 pub struct UpdateHandler{
     bot:Bot,
     update:Update,
-    chats:Arc<Mutex<Chats>>
+    chats:Arc<RwLock<Chats>>
 }
 
 impl UpdateHandler{
-    pub fn new(bot:Bot,update:Update,chats:Arc<Mutex<Chats>>)->UpdateHandler{
+    pub fn new(bot:Bot,update:Update,chats:Arc<RwLock<Chats>>)->UpdateHandler{
         Self{
             bot,
             update,
@@ -37,8 +40,8 @@ impl UpdateHandler{
             UpdateKind::CallbackQuery(query)=>{
                 if let Some(message)=query.message{
                     if let Some(data)=query.data{
-                        let chat=self.chats.lock().await.get(message.chat.id);
-                        CommandCallbackHandler::new(self.bot.clone(),chat).handle(&data).await;
+                        let chat=self.chats.write().await.get(message.chat.id);
+                        CommandCallbackHandler::new(self.bot.clone(),data,message,chat).handle().await;
                     }
                 }
 
@@ -46,7 +49,7 @@ impl UpdateHandler{
             }
 
             UpdateKind::Message(message)=>{
-                let chat=self.chats.lock().await.get(message.chat.id);
+                let chat=self.chats.write().await.get(message.chat.id);
                 MessageHandler::new(self.bot,message,chat).handle().await;
             }
 
