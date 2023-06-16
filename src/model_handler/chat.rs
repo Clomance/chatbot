@@ -1,25 +1,14 @@
 use crate::{
+    synthesize_voice_keyboard,
     prompt::Prompt,
     openai::OpenAIWrapper,
+    resources::Resources,
+    extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
         History
     }
 };
-
-use teloxide_core::{
-    Bot,
-    requests::Requester
-};
-
-
-
-const GREETING:&'static str="\
-Привет, дорогой! Меня создавали в первую очередь быть твоим верным другом. \
-Я могу выслушать тебя, дать совет, подбодрить, поговорить с тобой на любые волнующие тебя темы.
-
-Что ты хочешь обсудить, о чем хочешь рассказать?\
-";
 
 
 
@@ -38,45 +27,49 @@ impl ChatModel{
 
 
 pub struct ChatHandler<'c>{
-    bot:Bot,
+    bot:ExtendedBotInterface,
     chat:&'c mut Chat,
 }
 
 impl<'c> ChatHandler<'c>{
-    pub fn new(bot:Bot,chat:&'c mut Chat)->ChatHandler<'c>{
+    pub fn new(bot:ExtendedBotInterface,chat:&'c mut Chat)->ChatHandler<'c>{
         Self{
             bot,
             chat
         }
     }
 
-    pub async fn handle_command(&mut self,command:&str){
+    pub async fn handle_command(self,command:&str){
         match command{
             "chat"=>{
-                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+                let greeting=Resources::load_text("resources/text/chat/greeting.txt").await;
+
+                self.bot.send_message(self.chat.id,greeting,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "reset"=>{
                 self.chat.data.chat().history.clear();
 
-                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
+                self.bot.send_message(self.chat.id,"История очищена",Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             _=>{}
         }
     }
 
-    pub async fn handle_command_callback(&mut self,callback:&str){
-        match callback{
+    pub async fn handle_command_callback(self,callback:String){
+        match callback.as_str(){
             "start"=>{
-                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+                let greeting=Resources::load_text("resources/text/chat/greeting.txt").await;
+
+                self.bot.send_message(self.chat.id,greeting,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             _=>{}
         }
     }
 
-    pub async fn handle_message(&mut self,message:&str){
+    pub async fn handle_message(self,message:&str){
         let mut messages=Vec::new();
 
         let data=self.chat.data.chat();
@@ -96,6 +89,6 @@ impl<'c> ChatHandler<'c>{
 
         data.history.push_response(&response);
 
-        self.bot.send_message(self.chat.id,response).await.unwrap();
+        self.bot.send_message(self.chat.id,response,Some(synthesize_voice_keyboard(None))).await.unwrap();
     }
 }

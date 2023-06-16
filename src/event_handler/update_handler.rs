@@ -1,4 +1,4 @@
-use crate::chat::Chats;
+use crate::{chat::Chats, extended_bot_interface::ExtendedBotInterface};
 
 use super::{
     MessageHandler,
@@ -10,7 +10,6 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use teloxide_core::{
-    Bot,
     requests::Requester,
     types::{
         Update,
@@ -21,13 +20,13 @@ use teloxide_core::{
 
 
 pub struct UpdateHandler{
-    bot:Bot,
+    bot:ExtendedBotInterface,
     update:Update,
     chats:Arc<RwLock<Chats>>
 }
 
 impl UpdateHandler{
-    pub fn new(bot:Bot,update:Update,chats:Arc<RwLock<Chats>>)->UpdateHandler{
+    pub fn new(bot:ExtendedBotInterface,update:Update,chats:Arc<RwLock<Chats>>)->UpdateHandler{
         Self{
             bot,
             update,
@@ -45,7 +44,7 @@ impl UpdateHandler{
                     }
                 }
 
-                let _=self.bot.answer_callback_query(query.id).await;
+                let _=self.bot.bot.answer_callback_query(query.id).await;
             }
 
             UpdateKind::Message(message)=>{

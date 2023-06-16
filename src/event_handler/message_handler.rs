@@ -1,18 +1,15 @@
 use crate::{
     openai::OpenAI,
-    event::CommandHandler,
-    model::{
-        GameHandler,
-        TutorHandler,
-        ChatHandler,
-        HomeworkHandler,
-        PlaygroundHandler
-    },
+    event_handler::CommandHandler,
+    extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
-        ChatMode,
-        ChatState,
-        StudyMode
+        ChatState
+    },
+    state_handler::{
+        InitialState,
+        PartitialState,
+        FullState
     }
 };
 
@@ -21,28 +18,35 @@ use std::{
     io::Cursor
 };
 
-// use audiopus::{coder::Decoder, SampleRate, Channels};
-use mp3lame_encoder::{Builder, Id3Tag, MonoPcm, FlushNoGap};
+use mp3lame_encoder::{
+    Builder,
+    Id3Tag,
+    MonoPcm,
+    FlushNoGap
+};
 
 use tokio::sync::Mutex;
 
 use teloxide_core::{
-    Bot,
-    types::{Message, MessageKind, MediaKind},
     requests::Requester,
-    net::Download
+    net::Download,
+    types::{
+        Message,
+        MessageKind,
+        MediaKind
+    }
 };
 
 
 
 pub struct MessageHandler{
-    bot:Bot,
+    bot:ExtendedBotInterface,
     message:Message,
     chat:Arc<Mutex<Chat>>
 }
 
 impl MessageHandler{
-    pub fn new(bot:Bot,message:Message,chat:Arc<Mutex<Chat>>)->MessageHandler{
+    pub fn new(bot:ExtendedBotInterface,message:Message,chat:Arc<Mutex<Chat>>)->MessageHandler{
         Self{
             bot,
             message,
@@ -62,8 +66,8 @@ impl MessageHandler{
                 MediaKind::Voice(media)=>{
                     let mut buffer=Vec::with_capacity(media.voice.file.size as usize);
 
-                    let file=self.bot.get_file(media.voice.file.id).await.unwrap();
-                    self.bot.download_file(&file.path,&mut buffer).await.unwrap();
+                    let file=self.bot.bot.get_file(media.voice.file.id).await.unwrap();
+                    self.bot.bot.download_file(&file.path,&mut buffer).await.unwrap();
 
                     let (samples,_)=ogg_opus::decode::<Cursor<Vec<u8>>,48000>(Cursor::new(buffer)).unwrap();
 
@@ -119,39 +123,15 @@ impl MessageHandler{
         let mut chat=self.chat.lock().await;
 
         if voice{
-            self.bot.send_message(chat.id,format!("Вы сказали: \"{}.\"",text)).await.unwrap();
+            self.bot.send_message(chat.id,format!("Вы сказали: \"{}.\"",text),None).await.unwrap();
         }
 
         match &mut chat.state{
-            ChatState::Initial=>{
-                self.bot.send_message(chat.id,"Напиши /start, чтобы начать").await.unwrap();
-            }
+            ChatState::Initial=>InitialState::new(self.bot,&mut chat).handle_message(&text).await,
 
-            ChatState::PartiallyFunctional=>{}
+            ChatState::PartiallyFunctional=>PartitialState::new(self.bot,&mut chat).handle_message(&text).await,
 
-            ChatState::FullyFunctional(mode)=>{
-                let text=text
-                    .replace("\"","\\\"")
-                    .replace("\n","\\n")
-                    .replace("\r","\\r")
-                    .replace("\t","\\t");
-
-                match mode{
-                    ChatMode::Chat=>ChatHandler::new(self.bot,&mut chat).handle_message(&text).await,
-
-                    ChatMode::Study(mode)=>match mode{
-                        StudyMode::None=>{}
-
-                        StudyMode::Tutor=>TutorHandler::new(self.bot,&mut chat).handle_message(&text).await,
-
-                        StudyMode::Homework=>HomeworkHandler::new(self.bot,&mut chat).handle_message(&text).await,
-                    }
-
-                    ChatMode::Game=>GameHandler::new(self.bot,&mut chat).handle_message(&text).await,
-
-                    ChatMode::Playground=>PlaygroundHandler::new(self.bot,&mut chat).handle_message(&text).await,
-                }
-            }
+            ChatState::FullyFunctional=>FullState::new(self.bot,&mut chat).handle_message(&text).await,
         }
     }
 }

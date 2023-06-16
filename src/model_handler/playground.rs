@@ -1,21 +1,13 @@
 use crate::{
+    synthesize_voice_keyboard,
     openai::OpenAIWrapper,
+    resources::Resources,
+    extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
         History
     }
 };
-
-use teloxide_core::{
-    Bot,
-    requests::Requester
-};
-
-
-
-const GREETING:&'static str="\
-Режим без ограничений\
-";
 
 
 
@@ -35,12 +27,12 @@ impl PlaygroundModel{
 
 
 pub struct PlaygroundHandler<'c>{
-    bot:Bot,
+    bot:ExtendedBotInterface,
     chat:&'c mut Chat,
 }
 
 impl<'c> PlaygroundHandler<'c>{
-    pub fn new(bot:Bot,chat:&'c mut Chat)->PlaygroundHandler<'c>{
+    pub fn new(bot:ExtendedBotInterface,chat:&'c mut Chat)->PlaygroundHandler<'c>{
         Self{
             bot,
             chat
@@ -50,13 +42,15 @@ impl<'c> PlaygroundHandler<'c>{
     pub async fn handle_command(&mut self,command:&str){
         match command{
             "playground"=>{
-                self.bot.send_message(self.chat.id,GREETING).await.unwrap();
+                let greeting=Resources::load_text("resources/text/playground/greeting.txt").await;
+
+                self.bot.send_message(self.chat.id,greeting,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "reset"=>{
                 self.chat.data.playground().history.clear();
 
-                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
+                self.bot.send_message(self.chat.id,"История очищена",Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             _=>{}
@@ -84,6 +78,6 @@ impl<'c> PlaygroundHandler<'c>{
 
         data.history.push_response(&response);
 
-        self.bot.send_message(self.chat.id,response).await.unwrap();
+        self.bot.send_message(self.chat.id,response,Some(synthesize_voice_keyboard(None))).await.unwrap();
     }
 }

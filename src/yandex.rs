@@ -42,6 +42,7 @@ impl IamToken{
     }
 
     pub fn update(&mut self){
+        self.creation=SystemTime::now();
         self.token=YandexSpeechKit::token()
     }
 }

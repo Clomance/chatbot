@@ -1,4 +1,4 @@
-use crate::model::{
+use crate::model_handler::{
     GameModel,
     TutorModel,
     ChatModel,
@@ -29,7 +29,7 @@ pub const HISTORY_TOKEN_LIMIT:usize=2500;
 pub enum ChatState{
     Initial,
     PartiallyFunctional,
-    FullyFunctional(ChatMode)
+    FullyFunctional
 }
 
 
@@ -137,10 +137,26 @@ impl ModeData{
 }
 
 
+
+pub struct User{
+    token_used:u64,
+}
+
+impl User{
+    pub const fn new()->User{
+        Self{
+            token_used:0u64
+        }
+    }
+}
+
+
 pub struct Chat{
     pub id:ChatId,
     pub state:ChatState,
-    pub data:ModeData
+    pub mode:ChatMode,
+    pub data:ModeData,
+    pub user:User
 }
 
 impl Chat{
@@ -148,15 +164,17 @@ impl Chat{
         Self{
             id,
             state:ChatState::Initial,
-            data:ModeData::new()
+            mode:ChatMode::Chat,
+            data:ModeData::new(),
+            user:User::new()
         }
     }
 
     pub fn set_mode(&mut self,mode:ChatMode){
-        if let ChatState::FullyFunctional(current_mode)=&mut self.state{
-            self.data.clear(*current_mode);
-            *current_mode=mode;
-            self.data.set(*current_mode);
+        if let ChatState::FullyFunctional=&mut self.state{
+            self.data.clear(self.mode);
+            self.mode=mode;
+            self.data.set(self.mode);
         }
     }
 }

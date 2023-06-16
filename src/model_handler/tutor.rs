@@ -1,31 +1,26 @@
 use crate::{
+    synthesize_voice_button,
+    synthesize_voice_keyboard,
     prompt::Prompt,
     openai::OpenAIWrapper,
+    resources::Resources,
+    extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
         History
-    },
-};
-
-
-use teloxide_core::{
-    Bot,
-    requests::Requester,
-    types::{
-        InlineKeyboardMarkup,
-        InlineKeyboardButton,
-        InlineKeyboardButtonKind,
-        ReplyMarkup
     }
 };
 
 
+use teloxide_core::{
+    types::{
+        InlineKeyboardMarkup,
+        InlineKeyboardButton,
+        InlineKeyboardButtonKind
+    }
+};
 
-const GREETING:&'static str="\
-Отлично! Я искусственный интеллект, но могу стать твоим верным помощником в постижении полезных знаний, изучении языков, математики, физики, астрономии, обсудить интересные научные факты.
 
-Выбери темы, знания о которых тебе сейчас нужны:\
-";
 
 const MATH_GREETING:&'static str="\
 Математика - царица наук, благодаря инструментам которой, функционируют и другие, точные науки. \
@@ -93,12 +88,12 @@ impl TutorModel{
 
 
 pub struct TutorHandler<'c>{
-    bot:Bot,
+    bot:ExtendedBotInterface,
     chat:&'c mut Chat,
 }
 
 impl<'c> TutorHandler<'c>{
-    pub fn new(bot:Bot,chat:&'c mut Chat)->TutorHandler<'c>{
+    pub fn new(bot:ExtendedBotInterface,chat:&'c mut Chat)->TutorHandler<'c>{
         Self{
             bot,
             chat
@@ -110,7 +105,7 @@ impl<'c> TutorHandler<'c>{
             "reset"=>{
                 self.chat.data.tutor().history.clear();
 
-                self.bot.send_message(self.chat.id,"История очищена").await.unwrap();
+                self.bot.send_message(self.chat.id,"История очищена",None).await.unwrap();
             }
 
             _=>{}
@@ -124,39 +119,39 @@ impl<'c> TutorHandler<'c>{
 
         match callback{
             "tutor"=>{
-                let mut send_message=self.bot.send_message(self.chat.id,GREETING);
-                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(tutor_buttons()));
-                send_message.await.unwrap();
+                let greeting=Resources::load_text("resources/text/study/tutor/greeting.txt").await;
+
+                self.bot.send_message(self.chat.id,&greeting,Some(tutor_buttons())).await.unwrap();
             }
 
             "math"=>{
                 data.mode=TutorMode::Math;
-                self.bot.send_message(self.chat.id,MATH_GREETING).await.unwrap();
+                self.bot.send_message(self.chat.id,MATH_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "english"=>{
                 data.mode=TutorMode::English;
-                self.bot.send_message(self.chat.id,ENGLISH_GREETING).await.unwrap();
+                self.bot.send_message(self.chat.id,ENGLISH_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "finance"=>{
                 data.mode=TutorMode::Finance;
-                self.bot.send_message(self.chat.id,FINANCE_GREETING).await.unwrap();
+                self.bot.send_message(self.chat.id,FINANCE_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "astronomy"=>{
                 data.mode=TutorMode::Astronomy;
-                self.bot.send_message(self.chat.id,ASTRONOMY_GREETING).await.unwrap();
+                self.bot.send_message(self.chat.id,ASTRONOMY_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "enviroment"=>{
                 data.mode=TutorMode::Enviroment;
-                self.bot.send_message(self.chat.id,ENVIROMENT_GREETING).await.unwrap();
+                self.bot.send_message(self.chat.id,ENVIROMENT_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             "selfcare"=>{
                 data.mode=TutorMode::SelfCare;
-                self.bot.send_message(self.chat.id,SELF_CARE_GREETING).await.unwrap();
+                self.bot.send_message(self.chat.id,SELF_CARE_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }
 
             _=>{}
@@ -214,7 +209,7 @@ impl<'c> TutorHandler<'c>{
 
         data.history.push_response(&response);
 
-        self.bot.send_message(self.chat.id,response).await.unwrap();
+        self.bot.send_message(self.chat.id,response,Some(synthesize_voice_keyboard(None))).await.unwrap();
     }
 }
 
@@ -252,6 +247,7 @@ pub fn tutor_buttons()->InlineKeyboardMarkup{
     );
 
     let inline_buttons=vec![
+        vec![synthesize_voice_button(None)],
         vec![math],
         vec![english],
         vec![finance],
