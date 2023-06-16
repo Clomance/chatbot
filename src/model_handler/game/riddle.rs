@@ -51,7 +51,7 @@ impl<'c> RiddleGame<'c>{
             "riddlegamecontinue"=>{
                 let prompt=Prompt::load("prompts/game/riddle/riddle.json").await;
 
-                let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+                let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                 let response:Value=serde_json::from_str(&response).unwrap();
 
@@ -82,7 +82,7 @@ impl<'c> RiddleGame<'c>{
 
             messages.push(prompt.text);
 
-            let response=OpenAIWrapper::send_chat(&messages,1024);
+            let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
             let response:Value=serde_json::from_str(&response).unwrap();
 

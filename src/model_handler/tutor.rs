@@ -205,7 +205,7 @@ impl<'c> TutorHandler<'c>{
             messages.push(message.to_string())
         }
 
-        let response=OpenAIWrapper::send_chat(&messages,1024);
+        let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
         data.history.push_response(&response);
 

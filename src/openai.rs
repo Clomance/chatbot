@@ -2,8 +2,7 @@ use std::time::Duration;
 
 use attohttpc::{
     MultipartBuilder,
-    MultipartFile,
-    body::Text
+    MultipartFile
 };
 
 use serde_json::{
@@ -80,7 +79,7 @@ impl OpenAI{
     //     messages
     // }
 
-    pub fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<String>{
+    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<String>{
         let url="https://api.openai.com/v1/chat/completions";
 
         let mut payload=format!("\
@@ -103,16 +102,14 @@ impl OpenAI{
 
         println!("OpenAI request: {payload}");
 
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
+        let response=reqwest::Client::new().post(url)
             .header("Authorization",format!("Bearer {API_KEY}"))
             .header("Content-Type","application/json;charset=utf-8")
-            .body(Text(payload))
-            .connect_timeout(Duration::from_secs(1200))
-            .read_timeout(Duration::from_secs(1200))
-            .send().unwrap();
+            .body(payload)
+            .timeout(Duration::from_secs(1200))
+            .send().await.unwrap();
 
-        let response=response.text_utf8().unwrap();
+        let response=response.text().await.unwrap();
 
         println!("OpenAI response: {response}");
 
@@ -245,9 +242,9 @@ impl OpenAI{
 pub struct OpenAIWrapper;
 
 impl OpenAIWrapper{
-    pub fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->String{
+    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->String{
         loop{
-            if let Some(response)=OpenAI::send_chat(&messages,max_tokens){
+            if let Some(response)=OpenAI::send_chat(&messages,max_tokens).await{
                 break response
             }
             println!("Ошибка");

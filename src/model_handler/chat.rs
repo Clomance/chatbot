@@ -83,7 +83,7 @@ impl<'c> ChatHandler<'c>{
             messages.push(message.to_string())
         }
 
-        let response=OpenAIWrapper::send_chat(&messages,1024);
+        let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
         println!("Response: {}",response);
 

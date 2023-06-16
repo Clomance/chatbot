@@ -225,7 +225,7 @@ impl<'c> GameHandler<'c>{
                     "insterestingfactscontinue"=>{
                         let prompt=Prompt::load("prompts/game/insterestingfacts.json").await;
 
-                        let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+                        let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                         self.bot.send_message(self.chat.id,response,Some(interecting_facts_continue_keyboard())).await.unwrap();
                     }
@@ -243,7 +243,7 @@ impl<'c> GameHandler<'c>{
                     "tonguetwisterscontinue"=>{
                         let prompt=Prompt::load("prompts/game/tonguetwisters.json").await;
 
-                        let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+                        let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                         self.bot.send_message(self.chat.id,response,Some(tongue_twisters_continue_keyboard())).await.unwrap();
                     }
@@ -258,7 +258,7 @@ impl<'c> GameHandler<'c>{
                         if *random{
                             let prompt=Prompt::load("prompts/game/fairytales.json").await;
 
-                            let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+                            let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                             self.bot.send_message(self.chat.id,response,Some(fairy_tales_continue_keyboard())).await.unwrap();
                         }
@@ -269,7 +269,7 @@ impl<'c> GameHandler<'c>{
                             let mut prompt=Prompt::load("prompts/game/themedfairytales.json").await;
                             prompt.replace("{theme}",&theme);
 
-                            let response=OpenAIWrapper::send_chat(&[prompt.text],1024);
+                            let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                             self.bot.send_message(self.chat.id,response,Some(themed_fairy_tales_continue_keyboard())).await.unwrap();
                         }
