@@ -41,9 +41,9 @@ impl IamToken{
         SystemTime::now().duration_since(self.creation).unwrap()>IAM_TOKEN_LIFETIME
     }
 
-    pub fn update(&mut self){
+    pub async fn update(&mut self){
         self.creation=SystemTime::now();
-        self.token=YandexSpeechKit::token()
+        self.token=YandexSpeechKit::token().await
     }
 }
 
@@ -51,19 +51,20 @@ impl IamToken{
 pub struct YandexSpeechKit;
 
 impl YandexSpeechKit{
-    pub fn token()->String{
+    pub async fn token()->String{
         let url="https://iam.api.cloud.yandex.net/iam/v1/tokens";
 
         let object=json!({
             "yandexPassportOauthToken": OAUTH_TOKEN
         });
 
-        let response=attohttpc::post(url)
+        let response=reqwest::Client::new()
+            .post(url)
+            .json(&object)
             .timeout(Duration::from_secs(1200))
-            .json(&object).unwrap()
-            .send().unwrap();
+            .send().await.unwrap();
 
-        let response:Value=response.json_utf8().unwrap();
+        let response:Value=response.json().await.unwrap();
 
         println!("{:?}",response);
 
@@ -80,22 +81,23 @@ impl YandexSpeechKit{
             let mut token=IAM_TOKEN.write().await;
 
             if token.is_old(){
-                token.update()
+                token.update().await
             }
 
             token.token.clone()
         };
 
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
+        let response=reqwest::Client::new()
+            .post(url)
             .header("Authorization",format!("Bearer {token}"))
-            .send().unwrap();
+            .timeout(Duration::from_secs(1200))
+            .send().await.unwrap();
 
-        if response.is_success(){
-            response.bytes().unwrap()
+        if response.status().is_success(){
+            response.bytes().await.unwrap().to_vec()
         }
         else{
-            let response:Value=response.json_utf8().unwrap();
+            let response:Value=response.json().await.unwrap();
 
             println!("{:?}",response);
 

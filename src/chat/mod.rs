@@ -39,7 +39,8 @@ pub enum ChatMode{
     Chat,
     Study(StudyMode),
     Game,
-    Playground
+    Playground,
+    Profile
 }
 
 
@@ -81,7 +82,9 @@ impl ModeData{
 
             ChatMode::Game=>self.game=ManuallyDrop::new(GameModel::new()),
 
-            ChatMode::Playground=>self.playground=ManuallyDrop::new(PlaygroundModel::new())
+            ChatMode::Playground=>self.playground=ManuallyDrop::new(PlaygroundModel::new()),
+
+            ChatMode::Profile=>{}
         }
     }
 
@@ -100,7 +103,9 @@ impl ModeData{
 
                 ChatMode::Game=>ManuallyDrop::drop(&mut self.game),
 
-                ChatMode::Playground=>ManuallyDrop::drop(&mut self.playground)
+                ChatMode::Playground=>ManuallyDrop::drop(&mut self.playground),
+
+                ChatMode::Profile=>{}
             }
         }
     }
@@ -139,7 +144,7 @@ impl ModeData{
 
 
 pub struct User{
-    token_used:u64,
+    pub token_used:u64,
 }
 
 impl User{

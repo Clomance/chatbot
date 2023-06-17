@@ -13,7 +13,7 @@ use crate::{
         TutorHandler,
         GameHandler,
         HomeworkHandler,
-        PlaygroundHandler
+        PlaygroundHandler, ProfileHandler
     }
 };
 
@@ -101,9 +101,9 @@ impl<'c> FullState<'c>{
 
             // Перейти в раздел 'Профиль'
             "profile"=>{
-                let not_avaiable=Resources::load_text("resources/text/general/not_avaiable.txt").await;
+                self.chat.set_mode(ChatMode::Profile);
 
-                self.bot.send_message(self.chat.id,not_avaiable,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                ProfileHandler::new(self.bot,self.chat).handle_command(command).await
             }
 
             // Остальные команды ("reset")
@@ -121,6 +121,8 @@ impl<'c> FullState<'c>{
                 ChatMode::Game=>GameHandler::new(self.bot,self.chat).handle_command(command).await,
 
                 ChatMode::Playground=>PlaygroundHandler::new(self.bot,self.chat).handle_command(command).await,
+
+                ChatMode::Profile=>ProfileHandler::new(self.bot,self.chat).handle_command(command).await,
             }
         }
     }
@@ -155,7 +157,9 @@ impl<'c> FullState<'c>{
 
             ChatMode::Game=>GameHandler::new(self.bot,self.chat).handle_command_callback(&callback).await,
 
-            ChatMode::Playground=>PlaygroundHandler::new(self.bot,self.chat).handle_command_callback(&callback).await
+            ChatMode::Playground=>PlaygroundHandler::new(self.bot,self.chat).handle_command_callback(&callback).await,
+
+            ChatMode::Profile=>ProfileHandler::new(self.bot,self.chat).handle_command_callback(&callback).await,
         }
     }
 
@@ -180,6 +184,8 @@ impl<'c> FullState<'c>{
             ChatMode::Game=>GameHandler::new(self.bot,self.chat).handle_message(&text).await,
 
             ChatMode::Playground=>PlaygroundHandler::new(self.bot,self.chat).handle_message(&text).await,
+
+            ChatMode::Profile=>ProfileHandler::new(self.bot,self.chat).handle_message(&text).await,
         }
     }
 }

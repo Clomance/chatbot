@@ -30,7 +30,3 @@ features = ["full"]
 [dependencies.reqwest]
 version = "0.11.18"
 features = ["json"]
-
-[dependencies.attohttpc]
-version = "0.24.0"
-features = ["json", "multipart-form"]

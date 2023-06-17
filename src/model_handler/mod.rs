@@ -27,3 +27,6 @@ pub use playground::{
     PlaygroundModel,
     PlaygroundHandler
 };
+
+mod profile;
+pub use profile::ProfileHandler;

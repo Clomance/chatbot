@@ -1,10 +1,6 @@
 use std::time::Duration;
 
-use attohttpc::{
-    MultipartBuilder,
-    MultipartFile
-};
-
+use reqwest::multipart::{Form, Part};
 use serde_json::{
     // json,
     Value
@@ -13,6 +9,22 @@ use serde_json::{
 
 
 const API_KEY:&'static str="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";
+
+
+
+pub struct Completition{
+    pub message:String,
+    pub usage:u64
+}
+
+impl Completition{
+    pub fn new(message:String,usage:u64)->Completition{
+        Self{
+            message,
+            usage
+        }
+    }
+}
 
 
 
@@ -79,7 +91,7 @@ impl OpenAI{
     //     messages
     // }
 
-    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<String>{
+    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<Completition>{
         let url="https://api.openai.com/v1/chat/completions";
 
         let mut payload=format!("\
@@ -102,7 +114,8 @@ impl OpenAI{
 
         println!("OpenAI request: {payload}");
 
-        let response=reqwest::Client::new().post(url)
+        let response=reqwest::Client::new()
+            .post(url)
             .header("Authorization",format!("Bearer {API_KEY}"))
             .header("Content-Type","application/json;charset=utf-8")
             .body(payload)
@@ -118,8 +131,9 @@ impl OpenAI{
         let Some(choices)=payload["choices"].as_array() else {return None};
 
         let message=choices[0]["message"]["content"].as_str().unwrap();
+        let usage=payload["usage"]["total_tokens"].as_i64().unwrap() as u64;
 
-        Some(message.to_string())
+        Some(Completition::new(message.to_string(),usage))
     }
 
     // pub fn upload_file(path:&str,purpose:&str)->String{
@@ -212,22 +226,22 @@ impl OpenAI{
     //     vectors
     // }
 
-    pub fn send_voice(voice:&[u8])->String{
+    pub async fn send_voice(voice:Vec<u8>)->String{
         let url="https://api.openai.com/v1/audio/transcriptions";
 
-        let multipart=MultipartBuilder::new()
-            .with_file(MultipartFile::new("file",&voice).with_filename("voice.mp3").with_type("audio/mp3").unwrap())
-            .with_text("model","whisper-1")
-            .with_text("language","ru")
-            .build().unwrap();
-
-        let response=attohttpc::post(url)
-            .timeout(Duration::from_secs(1200))
+        let response=reqwest::Client::new()
+            .post(url)
+            .multipart(
+                Form::new()
+                .text("model","whisper-1")
+                .text("language","ru")
+                .part("file",Part::bytes(voice).file_name("voice.mp3").mime_str("audio/mp3").unwrap())
+            )
             .header("Authorization",format!("Bearer {API_KEY}"))
-            .body(multipart)
-            .send().unwrap();
+            .timeout(Duration::from_secs(1200))
+            .send().await.unwrap();
 
-        let text=response.text_utf8().unwrap();
+        let text=response.text().await.unwrap();
 
         println!("OpenAI response: {}",text);
 
@@ -242,7 +256,7 @@ impl OpenAI{
 pub struct OpenAIWrapper;
 
 impl OpenAIWrapper{
-    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->String{
+    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Completition{
         loop{
             if let Some(response)=OpenAI::send_chat(&messages,max_tokens).await{
                 break response

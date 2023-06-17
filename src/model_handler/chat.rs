@@ -85,10 +85,10 @@ impl<'c> ChatHandler<'c>{
 
         let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
-        println!("Response: {}",response);
+        self.chat.user.token_used+=response.usage;
 
-        data.history.push_response(&response);
+        data.history.push_response(&response.message);
 
-        self.bot.send_message(self.chat.id,response,Some(synthesize_voice_keyboard(None))).await.unwrap();
+        self.bot.send_message(self.chat.id,response.message,Some(synthesize_voice_keyboard(None))).await.unwrap();
     }
 }

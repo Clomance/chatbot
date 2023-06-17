@@ -76,8 +76,10 @@ impl<'c> PlaygroundHandler<'c>{
 
         let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
-        data.history.push_response(&response);
+        self.chat.user.token_used+=response.usage;
 
-        self.bot.send_message(self.chat.id,response,Some(synthesize_voice_keyboard(None))).await.unwrap();
+        data.history.push_response(&response.message);
+
+        self.bot.send_message(self.chat.id,response.message,Some(synthesize_voice_keyboard(None))).await.unwrap();
     }
 }

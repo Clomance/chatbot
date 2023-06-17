@@ -53,7 +53,9 @@ impl<'c> RiddleGame<'c>{
 
                 let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                let response:Value=serde_json::from_str(&response).unwrap();
+                self.chat.user.token_used+=response.usage;
+
+                let response:Value=serde_json::from_str(&response.message).unwrap();
 
                 let riddle=response["riddle"].as_str().unwrap();
                 let answer=response["answer"].as_str().unwrap();
@@ -84,7 +86,9 @@ impl<'c> RiddleGame<'c>{
 
             let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
-            let response:Value=serde_json::from_str(&response).unwrap();
+            self.chat.user.token_used+=response.usage;
+
+            let response:Value=serde_json::from_str(&response.message).unwrap();
 
             let result=response["result"].to_string().to_lowercase();
             let message=response["message"].as_str().unwrap();

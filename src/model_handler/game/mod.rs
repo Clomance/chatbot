@@ -35,6 +35,7 @@ mod fairy_tales;
 use fairy_tales::{
     fairy_tales_start_keyboard,
     fairy_tales_continue_keyboard,
+    themed_fairy_tales_start_keyboard,
     themed_fairy_tales_continue_keyboard
 };
 
@@ -227,7 +228,9 @@ impl<'c> GameHandler<'c>{
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                        self.bot.send_message(self.chat.id,response,Some(interecting_facts_continue_keyboard())).await.unwrap();
+                        self.chat.user.token_used+=response.usage;
+
+                        self.bot.send_message(self.chat.id,response.message,Some(interecting_facts_continue_keyboard())).await.unwrap();
                     }
 
                     _=>{}
@@ -245,7 +248,9 @@ impl<'c> GameHandler<'c>{
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                        self.bot.send_message(self.chat.id,response,Some(tongue_twisters_continue_keyboard())).await.unwrap();
+                        self.chat.user.token_used+=response.usage;
+
+                        self.bot.send_message(self.chat.id,response.message,Some(tongue_twisters_continue_keyboard())).await.unwrap();
                     }
 
                     _=>{}
@@ -260,10 +265,12 @@ impl<'c> GameHandler<'c>{
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                            self.bot.send_message(self.chat.id,response,Some(fairy_tales_continue_keyboard())).await.unwrap();
+                            self.chat.user.token_used+=response.usage;
+
+                            self.bot.send_message(self.chat.id,response.message,Some(fairy_tales_continue_keyboard())).await.unwrap();
                         }
                         else if theme.is_empty(){
-                            self.bot.send_message(self.chat.id,"Напиши тему",None).await.unwrap();
+                            self.bot.send_message(self.chat.id,"Напиши тему",Some(synthesize_voice_keyboard(None))).await.unwrap();
                         }
                         else{
                             let mut prompt=Prompt::load("prompts/game/themedfairytales.json").await;
@@ -271,14 +278,16 @@ impl<'c> GameHandler<'c>{
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                            self.bot.send_message(self.chat.id,response,Some(themed_fairy_tales_continue_keyboard())).await.unwrap();
+                            self.chat.user.token_used+=response.usage;
+
+                            self.bot.send_message(self.chat.id,response.message,Some(themed_fairy_tales_continue_keyboard())).await.unwrap();
                         }
                     }
 
                     "fairytalesnewtheme"=>{
                         data.mode=GameMode::fairy_tales("",false);
 
-                        self.bot.send_message(self.chat.id,"Напиши тему",None).await.unwrap();
+                        self.bot.send_message(self.chat.id,"Напиши тему",Some(synthesize_voice_keyboard(None))).await.unwrap();
                     }
 
                     "fairytalesresettheme"=>{
@@ -324,7 +333,7 @@ impl<'c> GameHandler<'c>{
                 else if theme.is_empty(){
                     *theme=message.to_string();
 
-                    self.bot.send_message(self.chat.id,"Тема принята",Some(synthesize_voice_keyboard(None))).await.unwrap();
+                    self.bot.send_message(self.chat.id,"Тема принята",Some(themed_fairy_tales_start_keyboard())).await.unwrap();
                 }
                 else{
                     self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы получить сказку",Some(synthesize_voice_keyboard(None))).await.unwrap();
