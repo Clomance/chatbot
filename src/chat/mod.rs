@@ -197,10 +197,16 @@ impl Chats{
         }
     }
 
-    pub fn get(&mut self,chat_id:ChatId)->Arc<Mutex<Chat>>{
-        if self.chats.get(&chat_id).is_none(){
-            self.chats.insert(chat_id,Arc::new(Mutex::new(Chat::new(chat_id))));
+    pub fn push(&mut self,chat_id:ChatId){
+        self.chats.insert(chat_id,Arc::new(Mutex::new(Chat::new(chat_id))));
+    }
+
+    pub fn get(&self,chat_id:ChatId)->Option<Arc<Mutex<Chat>>>{
+        if let Some(chat)=self.chats.get(&chat_id){
+            Some(chat.clone())
         }
-        self.chats.get(&chat_id).unwrap().clone()
+        else{
+            None
+        }
     }
 }

@@ -39,7 +39,14 @@ impl UpdateHandler{
             UpdateKind::CallbackQuery(query)=>{
                 if let Some(message)=query.message{
                     if let Some(data)=query.data{
-                        let chat=self.chats.write().await.get(message.chat.id);
+                        let chat=self.chats.read().await.get(message.chat.id);
+                        let chat=if let Some(chat)=chat{
+                            chat
+                        }
+                        else{
+                            self.chats.write().await.push(message.chat.id);
+                            self.chats.read().await.get(message.chat.id).unwrap()
+                        };
                         CommandCallbackHandler::new(self.bot.clone(),data,message,chat).handle().await;
                     }
                 }
@@ -48,7 +55,14 @@ impl UpdateHandler{
             }
 
             UpdateKind::Message(message)=>{
-                let chat=self.chats.write().await.get(message.chat.id);
+                let chat=self.chats.read().await.get(message.chat.id);
+                let chat=if let Some(chat)=chat{
+                    chat
+                }
+                else{
+                    self.chats.write().await.push(message.chat.id);
+                    self.chats.read().await.get(message.chat.id).unwrap()
+                };
                 MessageHandler::new(self.bot,message,chat).handle().await;
             }
 
