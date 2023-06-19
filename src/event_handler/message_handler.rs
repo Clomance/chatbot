@@ -63,6 +63,10 @@ impl MessageHandler{
                 }
 
                 MediaKind::Voice(media)=>{
+                    let chat=self.chat.lock().await;
+
+                    let sent_message=self.bot.send_message(chat.id,"Распознаёт речь...",None).await.unwrap();
+
                     let mut buffer=Vec::with_capacity(media.voice.file.size as usize);
 
                     let file=self.bot.bot.get_file(media.voice.file.id).await.unwrap();
@@ -103,8 +107,7 @@ impl MessageHandler{
 
                     text=OpenAI::send_voice(buffer).await;
 
-                    let chat=self.chat.lock().await;
-
+                    self.bot.bot.delete_message(chat.id,sent_message.id).await.unwrap();
                     self.bot.send_message(chat.id,format!("Вы сказали: \"{}.\"",text),None).await.unwrap();
                 }
 

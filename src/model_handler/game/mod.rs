@@ -44,7 +44,7 @@ use teloxide_core::{
         InlineKeyboardMarkup,
         InlineKeyboardButton,
         InlineKeyboardButtonKind
-    }
+    }, requests::Requester
 };
 
 
@@ -224,12 +224,15 @@ impl<'c> GameHandler<'c>{
                 match callback{
                     // При нажатии на кнопку "Интересный факт"
                     "insterestingfactscontinue"=>{
+                        let sent_message=self.bot.send_message(self.chat.id,"Пишет интересный факт...",None).await.unwrap();
+
                         let prompt=Prompt::load("prompts/game/insterestingfacts.json").await;
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                         self.chat.user.token_used+=response.usage;
 
+                        self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                         self.bot.send_message(self.chat.id,response.message,Some(interecting_facts_continue_keyboard())).await.unwrap();
                     }
 
@@ -244,12 +247,15 @@ impl<'c> GameHandler<'c>{
             GameMode::TongueTwisters=>{
                 match callback{
                     "tonguetwisterscontinue"=>{
+                        let sent_message=self.bot.send_message(self.chat.id,"Пишет скороговорку...",None).await.unwrap();
+
                         let prompt=Prompt::load("prompts/game/tonguetwisters.json").await;
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                         self.chat.user.token_used+=response.usage;
 
+                        self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                         self.bot.send_message(self.chat.id,response.message,Some(tongue_twisters_continue_keyboard())).await.unwrap();
                     }
 
@@ -261,18 +267,23 @@ impl<'c> GameHandler<'c>{
                 match callback{
                     "fairytalescontinue"=>{
                         if *random{
+                            let sent_message=self.bot.send_message(self.chat.id,"Пишет сказку...",None).await.unwrap();
+
                             let prompt=Prompt::load("prompts/game/fairytales.json").await;
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
                             self.chat.user.token_used+=response.usage;
 
+                            self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                             self.bot.send_message(self.chat.id,response.message,Some(fairy_tales_continue_keyboard())).await.unwrap();
                         }
                         else if theme.is_empty(){
                             self.bot.send_message(self.chat.id,"Напиши тему",Some(synthesize_voice_keyboard(None))).await.unwrap();
                         }
                         else{
+                            let sent_message=self.bot.send_message(self.chat.id,"Пишет сказку...",None).await.unwrap();
+
                             let mut prompt=Prompt::load("prompts/game/themedfairytales.json").await;
                             prompt.replace("{theme}",&theme);
 
@@ -280,6 +291,7 @@ impl<'c> GameHandler<'c>{
 
                             self.chat.user.token_used+=response.usage;
 
+                            self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                             self.bot.send_message(self.chat.id,response.message,Some(themed_fairy_tales_continue_keyboard())).await.unwrap();
                         }
                     }

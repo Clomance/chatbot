@@ -14,11 +14,11 @@ use super::{
 
 use serde_json::Value;
 
-use teloxide_core::types::{
+use teloxide_core::{types::{
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardButtonKind
-};
+}, requests::Requester};
 
 
 
@@ -49,6 +49,8 @@ impl<'c> RiddleGame<'c>{
 
             // При нажатии на кнопку "Новая загадка"
             "riddlegamecontinue"=>{
+                let sent_message=self.bot.send_message(self.chat.id,"Пишет загадку...",None).await.unwrap();
+
                 let prompt=Prompt::load("prompts/game/riddle/riddle.json").await;
 
                 let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
@@ -62,6 +64,7 @@ impl<'c> RiddleGame<'c>{
 
                 data.mode=GameMode::riddle(riddle,answer);
 
+                self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                 self.bot.send_message(self.chat.id,riddle,Some(riddle_keyboard(Some("Озвучить загадку")))).await.unwrap();
             }
 
@@ -76,6 +79,8 @@ impl<'c> RiddleGame<'c>{
             self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы начать играть",Some(synthesize_voice_keyboard(None))).await.unwrap();
         }
         else{
+            let sent_message=self.bot.send_message(self.chat.id,"Думает...",None).await.unwrap();
+
             let mut prompt=Prompt::load("prompts/game/riddle/guess.json").await;
 
             prompt.replace("{riddle}",&riddle);
@@ -93,6 +98,7 @@ impl<'c> RiddleGame<'c>{
             let result=response["result"].to_string().to_lowercase();
             let message=response["message"].as_str().unwrap();
 
+            self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
             if result=="true" || result=="\"true\"" || result=="\'true\'"{
                 self.chat.data.game().mode=GameMode::riddle("","");
 

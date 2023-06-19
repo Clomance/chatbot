@@ -1,3 +1,5 @@
+use teloxide_core::requests::Requester;
+
 use crate::{
     synthesize_voice_keyboard,
     prompt::Prompt,
@@ -70,6 +72,8 @@ impl<'c> ChatHandler<'c>{
     }
 
     pub async fn handle_message(self,message:&str){
+        let sent_message=self.bot.send_message(self.chat.id,"Набирает сообщение...",None).await.unwrap();
+
         let mut messages=Vec::new();
 
         let data=self.chat.data.chat();
@@ -89,6 +93,7 @@ impl<'c> ChatHandler<'c>{
 
         data.history.push_response(&response.message);
 
+        self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
         self.bot.send_message(self.chat.id,response.message,Some(synthesize_voice_keyboard(None))).await.unwrap();
     }
 }

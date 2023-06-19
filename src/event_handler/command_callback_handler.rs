@@ -17,8 +17,10 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use teloxide_core::{
+    requests::Requester,
     types::{
         Message,
+        ChatAction,
     }
 };
 
@@ -52,12 +54,16 @@ impl CommandCallbackHandler{
         match self.callback.as_str(){
             "synthesize"=>{
                 if let Some(text)=self.message.text(){
+                    let message=self.bot.send_message(chat.id,"Записывает голосовое сообщение...",None).await.unwrap();
+                    self.bot.bot.send_chat_action(chat.id,ChatAction::RecordVoice).await.unwrap();
+
                     let voice=YandexSpeechKit::synthesize(text).await;
 
                     if voice.is_empty(){
                         self.bot.send_message(chat.id,"Ошибка",None).await.unwrap();
                     }
                     else{
+                        self.bot.bot.delete_message(chat.id,message.id).await.unwrap();
                         self.bot.send_voice(chat.id,voice).await.unwrap();
                     }
                 }

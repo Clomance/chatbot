@@ -1,6 +1,10 @@
 use std::time::Duration;
 
-use reqwest::multipart::{Form, Part};
+use reqwest::multipart::{
+    Form,
+    Part
+};
+
 use serde_json::{
     // json,
     Value
@@ -12,13 +16,13 @@ const API_KEY:&'static str="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"
 
 
 
-pub struct Completition{
+pub struct Completion{
     pub message:String,
     pub usage:u64
 }
 
-impl Completition{
-    pub fn new(message:String,usage:u64)->Completition{
+impl Completion{
+    pub fn new(message:String,usage:u64)->Completion{
         Self{
             message,
             usage
@@ -91,7 +95,7 @@ impl OpenAI{
     //     messages
     // }
 
-    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<Completition>{
+    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Option<Completion>{
         let url="https://api.openai.com/v1/chat/completions";
 
         let mut payload=format!("\
@@ -126,14 +130,14 @@ impl OpenAI{
 
         println!("OpenAI response: {response}");
 
-        let payload:Value=serde_json::from_str(&response).unwrap();
+        let Ok(payload)=serde_json::from_str::<Value>(&response) else {return None};
 
         let Some(choices)=payload["choices"].as_array() else {return None};
 
         let message=choices[0]["message"]["content"].as_str().unwrap();
         let usage=payload["usage"]["total_tokens"].as_i64().unwrap() as u64;
 
-        Some(Completition::new(message.to_string(),usage))
+        Some(Completion::new(message.to_string(),usage))
     }
 
     // pub fn upload_file(path:&str,purpose:&str)->String{
@@ -256,12 +260,14 @@ impl OpenAI{
 pub struct OpenAIWrapper;
 
 impl OpenAIWrapper{
-    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Completition{
+    pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Completion{
         loop{
             if let Some(response)=OpenAI::send_chat(&messages,max_tokens).await{
                 break response
             }
             println!("Ошибка");
+
+            tokio::time::sleep(Duration::from_millis(1000)).await;
         }
     }
 }
