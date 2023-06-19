@@ -15,6 +15,8 @@ use event_handler::UpdateHandler;
 
 mod model_handler;
 
+mod module;
+
 mod state_handler;
 
 mod prompt;
@@ -40,7 +42,7 @@ use tokio::sync::RwLock;
 
 
 
-const TELEGRAM_BOT_TOKEN:&'static str="6058214276:AAFzDlKUr33C3In7jMM5cz6kUDqh85OzFqE";
+const TELEGRAM_BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
 // NoSenseDevBot - 6058214276:AAFzDlKUr33C3In7jMM5cz6kUDqh85OzFqE
 // GptKids - 5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0
 
