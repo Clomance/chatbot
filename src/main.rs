@@ -54,10 +54,12 @@ async fn main(){
 
     let bot=ExtendedBotInterface::new(TELEGRAM_BOT_TOKEN);
 
+    // Очистка старых команд
     let mut delete=bot.bot.delete_my_commands();
     delete.scope=Some(BotCommandScope::Default);
     delete.await.unwrap();
 
+    // Установка новых команд
     bot.bot.set_my_commands(
         [
             BotCommand::new("chat","Простое общение"),
@@ -78,6 +80,7 @@ async fn main(){
 
     let mut last_update_id=None;
     loop{
+        // Получение обновлений (только сообщения и нажатия кнопок)
         let mut update_request=bot.bot.get_updates();
         update_request.offset=last_update_id;
         update_request.allowed_updates=Some(
@@ -97,6 +100,7 @@ async fn main(){
             let bot=bot.clone();
             let chats=chats.clone();
 
+            // Выделение параллельной задачи для обработки обновления
             tokio::spawn(UpdateHandler::new(bot,update,chats).handle());
         }
 
