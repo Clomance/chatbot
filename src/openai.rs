@@ -6,13 +6,12 @@ use reqwest::multipart::{
 };
 
 use serde_json::{
-    // json,
     Value
 };
 
 
 
-const API_KEY:&'static str="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";
+static mut API_KEY:String=String::new();
 
 
 
@@ -35,6 +34,12 @@ impl Completion{
 pub struct OpenAI;
 
 impl OpenAI{
+    pub fn set_token(token:&str){
+        unsafe{
+            API_KEY=format!("Bearer {token}")
+        }
+    }
+
     // pub fn send_prompt<S:AsRef<str>>(prompt:&S,max_tokens:u16)->Option<String>{
     //     Self::send_prompt_array(&[prompt],max_tokens).pop()
     // }
@@ -120,7 +125,7 @@ impl OpenAI{
 
         let response=reqwest::Client::new()
             .post(url)
-            .header("Authorization",format!("Bearer {API_KEY}"))
+            .header("Authorization",unsafe{&API_KEY})
             .header("Content-Type","application/json;charset=utf-8")
             .body(payload)
             .timeout(Duration::from_secs(1200))
@@ -241,7 +246,7 @@ impl OpenAI{
                 .text("language","ru")
                 .part("file",Part::bytes(voice).file_name("voice.mp3").mime_str("audio/mp3").unwrap())
             )
-            .header("Authorization",format!("Bearer {API_KEY}"))
+            .header("Authorization",unsafe{&API_KEY})
             .timeout(Duration::from_secs(1200))
             .send().await.unwrap();
 

@@ -12,13 +12,13 @@ use tokio::sync::RwLock;
 
 
 
-const OAUTH_TOKEN:&'static str="y0_AgAAAABr_dOTAATuwQAAAADlZWMyvt6pwDoQSQyD_ZGqevdufCINKd0";
-
-const FOLDER_ID:&'static str="b1galt7gva67moa8daor";
-
 const IAM_TOKEN_LIFETIME:Duration=Duration::from_secs(4000);
 
 
+
+static mut OAUTH_TOKEN:String=String::new();
+
+static mut FOLDER_ID:String=String::new();
 
 static mut IAM_TOKEN:RwLock<IamToken>=RwLock::const_new(IamToken::new());
 
@@ -43,19 +43,32 @@ impl IamToken{
 
     pub async fn update(&mut self){
         self.creation=SystemTime::now();
-        self.token=YandexSpeechKit::token().await
+        self.token=YandexSpeechKit::iam_token().await
     }
 }
+
 
 
 pub struct YandexSpeechKit;
 
 impl YandexSpeechKit{
-    pub async fn token()->String{
+    pub fn set_oauth_token(token:&str){
+        unsafe{
+            OAUTH_TOKEN=token.to_string()
+        }
+    }
+
+    pub fn set_folder_id(id:&str){
+        unsafe{
+            FOLDER_ID=id.to_string()
+        }
+    }
+
+    pub async fn iam_token()->String{
         let url="https://iam.api.cloud.yandex.net/iam/v1/tokens";
 
         let object=json!({
-            "yandexPassportOauthToken": OAUTH_TOKEN
+            "yandexPassportOauthToken": unsafe{&OAUTH_TOKEN}
         });
 
         let response=reqwest::Client::new()
@@ -72,10 +85,10 @@ impl YandexSpeechKit{
     }
 
     pub async fn synthesize(text:&str)->Vec<u8>{
-        let url=format!(
+        let url=unsafe{format!(
             "https://tts.api.cloud.yandex.net/speech/v1/tts:synthesize?text={}&folderId={FOLDER_ID}",
             text
-        );
+        )};
 
         let token=unsafe{
             let mut token=IAM_TOKEN.write().await;

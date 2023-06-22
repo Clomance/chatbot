@@ -7,8 +7,10 @@ mod extended_bot_interface;
 use extended_bot_interface::ExtendedBotInterface;
 
 mod openai;
+use openai::OpenAI;
 
 mod yandex;
+use yandex::YandexSpeechKit;
 
 mod event_handler;
 use event_handler::UpdateHandler;
@@ -40,21 +42,32 @@ use teloxide_core::{
 
 use tokio::sync::RwLock;
 
-
-
-const TELEGRAM_BOT_TOKEN:&'static str="5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0";
-// NoSenseDevBot - 6058214276:AAFzDlKUr33C3In7jMM5cz6kUDqh85OzFqE
-// GptKids - 5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0
+use serde_json::Value;
 
 
 
 #[tokio::main]
 async fn main(){
-    println!("BotStart");
+    println!("Launched");
 
-    let bot=ExtendedBotInterface::new(TELEGRAM_BOT_TOKEN);
+    // Загрузка настроек
+    let settings:Value=serde_json::from_slice(
+        &std::fs::read("settings/api.json").expect("No settings file")
+    ).expect("Wrong settings format");
 
-    // Очистка старых команд
+    // Получение и установка токена телеграм-бота
+    let bot=ExtendedBotInterface::new(settings["TELEGRAM_BOT_TOKEN"].as_str().unwrap()); // 5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0
+
+    // Получение и установка ключа для интерфейса OpenAI
+    OpenAI::set_token(settings["OPENAI_API_KEY"].as_str().unwrap());
+
+    // Получение и установка токенов для интерфейса Яндекса
+    YandexSpeechKit::set_oauth_token(settings["YANDEX_OAUTH_TOKEN"].as_str().unwrap());
+    YandexSpeechKit::set_folder_id(settings["YANDEX_FOLDER_ID"].as_str().unwrap());
+
+    println!("Loaded");
+
+    // Удаление старых команд
     let mut delete=bot.bot.delete_my_commands();
     delete.scope=Some(BotCommandScope::Default);
     delete.await.unwrap();
@@ -69,14 +82,15 @@ async fn main(){
             BotCommand::new("reset","Очистить историю"),
             BotCommand::new("settings","Настройки"),
             BotCommand::new("profile","Профиль"),
+            BotCommand::new("etc","Дополнительно")
         ]
     ).await.unwrap();
 
-    println!("CommandsSet");
+    println!("Configured");
 
     let chats=Arc::new(RwLock::new(Chats::new()));
 
-    println!("UpdateLoopStart");
+    println!("Started");
 
     let mut last_update_id=None;
     loop{
@@ -127,13 +141,7 @@ pub fn synthesize_voice_button(text:Option<&str>)->InlineKeyboardButton{
 
 
 pub fn synthesize_voice_keyboard(text:Option<&str>)->InlineKeyboardMarkup{
-    let synthesize=synthesize_voice_button(text);
-
-    let inline_buttons=vec![
-        vec![synthesize]
-    ];
-
     InlineKeyboardMarkup{
-        inline_keyboard:inline_buttons
+        inline_keyboard:vec![vec![synthesize_voice_button(text)]]
     }
 }

@@ -209,7 +209,7 @@ impl<'c> TutorHandler<'c>{
 
         let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
-        self.chat.user.token_used+=response.usage;
+        self.chat.user.tokens_used+=response.usage;
 
         data.history.push_response(&response.message);
 

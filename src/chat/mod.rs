@@ -143,14 +143,48 @@ impl ModeData{
 
 
 
+#[derive(Clone,Copy,Debug)]
+#[repr(u64)]
+pub enum ChatFlag{
+    Admin
+}
+
+
+
+pub struct ChatFlags{
+    inner:u64
+}
+
+impl ChatFlags{
+    pub const fn new()->ChatFlags{
+        Self{
+            inner:0u64
+        }
+    }
+
+    pub fn set(&mut self,flag:ChatFlag){
+        self.inner|=flag as u64
+    }
+
+    pub fn remove(&mut self,flag:ChatFlag){
+        self.inner&=!(flag as u64)
+    }
+
+    pub fn is_set(&self,flag:ChatFlag)->bool{
+        (self.inner&(flag as u64))==flag as u64
+    }
+}
+
+
+
 pub struct User{
-    pub token_used:u64,
+    pub tokens_used:u64,
 }
 
 impl User{
     pub const fn new()->User{
         Self{
-            token_used:0u64
+            tokens_used:0u64
         }
     }
 }
@@ -161,6 +195,7 @@ pub struct Chat{
     pub state:ChatState,
     pub mode:ChatMode,
     pub data:ModeData,
+    pub flags:ChatFlags,
     pub user:User
 }
 
@@ -171,6 +206,7 @@ impl Chat{
             state:ChatState::Initial,
             mode:ChatMode::Chat,
             data:ModeData::new(),
+            flags:ChatFlags::new(),
             user:User::new()
         }
     }
@@ -181,6 +217,19 @@ impl Chat{
             self.mode=mode;
             self.data.set(self.mode);
         }
+    }
+
+    pub fn set_admin(&mut self,set:bool){
+        if set{
+            self.flags.set(ChatFlag::Admin)
+        }
+        else{
+            self.flags.remove(ChatFlag::Admin)
+        }
+    }
+
+    pub fn is_admin(&self)->bool{
+        self.flags.is_set(ChatFlag::Admin)
     }
 }
 

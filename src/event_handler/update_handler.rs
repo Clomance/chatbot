@@ -44,6 +44,7 @@ impl UpdateHandler{
                             chat
                         }
                         else{
+                            drop(chat);
                             self.chats.write().await.push(message.chat.id);
                             self.chats.read().await.get(message.chat.id).unwrap()
                         };
@@ -60,6 +61,7 @@ impl UpdateHandler{
                     chat
                 }
                 else{
+                    drop(chat);
                     self.chats.write().await.push(message.chat.id);
                     self.chats.read().await.get(message.chat.id).unwrap()
                 };

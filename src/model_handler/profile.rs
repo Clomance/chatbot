@@ -55,7 +55,7 @@ impl<'c> ProfileHandler<'c>{
     pub async fn handle_command_callback(&mut self,callback:&str){
         match callback{
             "tokenusage"=>{
-                let text=format!("Использовано токенов: {}",self.chat.user.token_used);
+                let text=format!("Использовано токенов: {}",self.chat.user.tokens_used);
 
                 self.bot.send_message(self.chat.id,text,Some(synthesize_voice_keyboard(None))).await.unwrap();
             }

@@ -13,7 +13,8 @@ use crate::{
         TutorHandler,
         GameHandler,
         HomeworkHandler,
-        PlaygroundHandler, ProfileHandler
+        PlaygroundHandler,
+        ProfileHandler
     }
 };
 
@@ -43,7 +44,7 @@ impl<'c> FullState<'c>{
 
     pub async fn handle_command(self,command:&str){
         match command{
-            // Перейти в режим 'Простое общение'
+            // Перейти в раздел 'Простое общение'
             "chat"=>{
                 if let ChatMode::Chat=self.chat.mode{
                     let the_chosen_mode_is_the_current=Resources::load_text("resources/text/general/the_chosen_mode_is_the_current.txt").await;
@@ -57,7 +58,7 @@ impl<'c> FullState<'c>{
                 }
             }
 
-            // Перейти в режим 'Учёба'
+            // Перейти в раздел 'Учёба'
             "study"=>{
                 self.chat.set_mode(ChatMode::Study(StudyMode::None));
 
@@ -66,7 +67,7 @@ impl<'c> FullState<'c>{
                 send_message.await.unwrap();
             }
 
-            // Перейти в режим 'Игры'
+            // Перейти в раздел 'Игры'
             "game"=>{
                 if let ChatMode::Game=self.chat.mode{
                     GameHandler::new(self.bot,self.chat).handle_command("gamerepeat").await
@@ -78,7 +79,7 @@ impl<'c> FullState<'c>{
                 }
             }
 
-            // Перейти в режим 'Свободный режим'
+            // Перейти в раздел 'Свободный режим'
             "playground"=>{
                 if let ChatMode::Playground=self.chat.mode{
                     let the_chosen_mode_is_the_current=Resources::load_text("resources/text/general/the_chosen_mode_is_the_current.txt").await;
@@ -104,6 +105,13 @@ impl<'c> FullState<'c>{
                 self.chat.set_mode(ChatMode::Profile);
 
                 ProfileHandler::new(self.bot,self.chat).handle_command(command).await
+            }
+
+            // Перейти в раздел 'Дополнительно'
+            "etc"=>{
+                // self.chat.set_mode(ChatMode::Etc);
+
+                // EtcHandler::new(self.bot,self.chat).handle_command(command).await
             }
 
             // Остальные команды ("reset")

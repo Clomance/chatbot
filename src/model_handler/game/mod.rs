@@ -230,7 +230,7 @@ impl<'c> GameHandler<'c>{
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                        self.chat.user.token_used+=response.usage;
+                        self.chat.user.tokens_used+=response.usage;
 
                         self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                         self.bot.send_message(self.chat.id,response.message,Some(interecting_facts_continue_keyboard())).await.unwrap();
@@ -253,7 +253,7 @@ impl<'c> GameHandler<'c>{
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                        self.chat.user.token_used+=response.usage;
+                        self.chat.user.tokens_used+=response.usage;
 
                         self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                         self.bot.send_message(self.chat.id,response.message,Some(tongue_twisters_continue_keyboard())).await.unwrap();
@@ -273,7 +273,7 @@ impl<'c> GameHandler<'c>{
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                            self.chat.user.token_used+=response.usage;
+                            self.chat.user.tokens_used+=response.usage;
 
                             self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                             self.bot.send_message(self.chat.id,response.message,Some(fairy_tales_continue_keyboard())).await.unwrap();
@@ -289,7 +289,7 @@ impl<'c> GameHandler<'c>{
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
-                            self.chat.user.token_used+=response.usage;
+                            self.chat.user.tokens_used+=response.usage;
 
                             self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
                             self.bot.send_message(self.chat.id,response.message,Some(themed_fairy_tales_continue_keyboard())).await.unwrap();
