@@ -22,6 +22,7 @@ teloxide-core = "0.9.1"
 gpt-encoder = "0.1.1"
 mp3lame-encoder = "0.1.2"
 ogg-opus = "0.1.2"
+rocket = "0.5.0-rc.3"
 
 [dependencies.tokio]
 version = "1.23.0"

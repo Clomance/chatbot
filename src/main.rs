@@ -1,3 +1,5 @@
+#![feature(decl_macro)]
+
 mod chat;
 use chat::Chats;
 
@@ -23,6 +25,8 @@ mod state_handler;
 
 mod prompt;
 
+mod web_server;
+
 use std::{
     sync::Arc,
     time::Duration
@@ -42,6 +46,8 @@ use teloxide_core::{
 use tokio::sync::RwLock;
 
 use serde_json::Value;
+
+use crate::web_server::WebServer;
 
 
 
@@ -88,6 +94,8 @@ async fn main(){
     println!("Configured");
 
     let chats=Arc::new(RwLock::new(Chats::new()));
+
+    tokio::spawn(WebServer::new().run());
 
     println!("Started");
 

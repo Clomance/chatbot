@@ -1,4 +1,4 @@
-use std::{time::Duration, f32::consts::E};
+use std::time::Duration;
 
 use reqwest::multipart::{
     Form,
