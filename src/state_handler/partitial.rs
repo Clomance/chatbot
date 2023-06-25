@@ -2,7 +2,7 @@ use crate::{
     extended_bot_interface::ExtendedBotInterface,
     chat::Chat,
     resources::Resources,
-    synthesize_voice_keyboard
+    synthesize_voice_button
 };
 
 
@@ -26,28 +26,28 @@ impl<'c> PartitialState<'c>{
             "chat"=>{
                 let the_chosen_mode_is_the_current=Resources::load_text("resources/text/general/the_chosen_mode_is_the_current.txt").await;
 
-                self.bot.send_message(self.chat.id,the_chosen_mode_is_the_current,None).await.unwrap();
+                self.bot.send_message(self.chat.id,the_chosen_mode_is_the_current).await.unwrap();
             }
 
             // Перейти в раздел 'Настройки'
             "settings"=>{
                 let not_avaiable=Resources::load_text("resources/text/general/not_avaiable.txt").await;
 
-                self.bot.send_message(self.chat.id,not_avaiable,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,not_avaiable).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             // Перейти в раздел 'Профиль'
             "profile"=>{
                 let not_avaiable=Resources::load_text("resources/text/general/not_avaiable.txt").await;
 
-                self.bot.send_message(self.chat.id,not_avaiable,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,not_avaiable).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             // Сообщение для других команд
             _=>{
                 let access_denied=Resources::load_text("resources/text/general/access_denied.txt").await;
 
-                self.bot.send_message(self.chat.id,access_denied,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,access_denied).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
         }
     }

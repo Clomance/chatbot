@@ -1,7 +1,5 @@
-use teloxide_core::{requests::Requester};
-
 use crate::{
-    synthesize_voice_keyboard,
+    synthesize_voice_button,
     openai::OpenAIWrapper,
     resources::Resources,
     extended_bot_interface::ExtendedBotInterface,
@@ -10,6 +8,8 @@ use crate::{
         History
     }
 };
+
+use teloxide_core::requests::Requester;
 
 
 
@@ -46,13 +46,13 @@ impl<'c> PlaygroundHandler<'c>{
             "playground"=>{
                 let greeting=Resources::load_text("resources/text/playground/greeting.txt").await;
 
-                self.bot.send_message(self.chat.id,greeting,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,greeting).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             "reset"=>{
                 self.chat.data.playground().history.clear();
 
-                self.bot.send_message(self.chat.id,"История очищена",Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,"История очищена").reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             _=>{}
@@ -66,7 +66,7 @@ impl<'c> PlaygroundHandler<'c>{
     }
 
     pub async fn handle_message(&mut self,message:&str){
-        let sent_message=self.bot.send_message(self.chat.id,"Набирает сообщение...",None).await.unwrap();
+        let sent_message=self.bot.send_message(self.chat.id,"Набирает сообщение...").await.unwrap();
 
         let mut messages=Vec::new();
 
@@ -80,11 +80,11 @@ impl<'c> PlaygroundHandler<'c>{
 
         let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
-        self.chat.user.tokens_used+=response.usage;
+        self.chat.user.token_usage.total+=response.usage;
 
         data.history.push_response(&response.message);
 
         self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
-        self.bot.send_message(self.chat.id,response.message,Some(synthesize_voice_keyboard(None))).await.unwrap();
+        self.bot.send_message(self.chat.id,response.message).reply_markup(synthesize_voice_button(None)).await.unwrap();
     }
 }

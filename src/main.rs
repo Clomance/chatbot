@@ -34,7 +34,6 @@ use teloxide_core::{
         AllowedUpdate,
         BotCommand,
         BotCommandScope,
-        InlineKeyboardMarkup,
         InlineKeyboardButton,
         InlineKeyboardButtonKind
     }
@@ -136,12 +135,4 @@ pub fn synthesize_voice_button(text:Option<&str>)->InlineKeyboardButton{
         text,
         InlineKeyboardButtonKind::CallbackData("synthesize".into())
     )
-}
-
-
-
-pub fn synthesize_voice_keyboard(text:Option<&str>)->InlineKeyboardMarkup{
-    InlineKeyboardMarkup{
-        inline_keyboard:vec![vec![synthesize_voice_button(text)]]
-    }
 }

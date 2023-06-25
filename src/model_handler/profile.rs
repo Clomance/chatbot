@@ -1,16 +1,12 @@
 use crate::{
     synthesize_voice_button,
-    synthesize_voice_keyboard,
-    extended_bot_interface::ExtendedBotInterface,
-    chat::{
-        Chat
-    }
+    chat::Chat,
+    extended_bot_interface::ExtendedBotInterface
 };
 
 use teloxide_core::types::{
     InlineKeyboardButton,
-    InlineKeyboardButtonKind,
-    InlineKeyboardMarkup
+    InlineKeyboardButtonKind
 };
 
 
@@ -33,7 +29,7 @@ impl<'c> ProfileHandler<'c>{
             "profile"=>{
                 let token_usage=InlineKeyboardButton::new(
                     "Использовано токенов",
-                    InlineKeyboardButtonKind::CallbackData("tokenusage".into())
+                    InlineKeyboardButtonKind::CallbackData("tokensused".into())
                 );
 
                 let inline_buttons=vec![
@@ -41,11 +37,7 @@ impl<'c> ProfileHandler<'c>{
                     vec![token_usage]
                 ];
 
-                let keyboard=InlineKeyboardMarkup{
-                    inline_keyboard:inline_buttons
-                };
-
-                self.bot.send_message(self.chat.id,"Профиль",Some(keyboard)).await.unwrap();
+                self.bot.send_message(self.chat.id,"Профиль").reply_markup(inline_buttons).await.unwrap();
             }
 
             _=>{}
@@ -54,10 +46,10 @@ impl<'c> ProfileHandler<'c>{
 
     pub async fn handle_command_callback(&mut self,callback:&str){
         match callback{
-            "tokenusage"=>{
-                let text=format!("Использовано токенов: {}",self.chat.user.tokens_used);
+            "tokensused"=>{
+                let text=format!("Использовано токенов: {}",self.chat.user.token_usage.total);
 
-                self.bot.send_message(self.chat.id,text,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,text).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             _=>{}

@@ -23,7 +23,8 @@ use teloxide_core::{
     types::{
         Message,
         MessageKind,
-        MediaKind, ChatKind
+        MediaKind,
+        ChatKind
     }
 };
 
@@ -54,6 +55,7 @@ impl MessageHandler{
 
                 if let MediaKind::Text(media)=&message.media_kind{
                     if media.text=="nevergonnagiveyouup"{
+                        self.bot.send_message(self.message.chat.id,"nevergonnaletyoudown").await.unwrap();
                         self.chat.lock().await.set_admin(true)
                     }
                 }
@@ -61,7 +63,7 @@ impl MessageHandler{
                 if !self.chat.lock().await.is_admin(){
                     if let Some(user)=message.from{
                         if self.bot.bot.get_chat_member("@gptkids".to_string(),user.id).await.is_err(){
-                            self.bot.send_message(self.message.chat.id,"Подпишитесь на наш телеграм канал (@gptkids), чтобы получить доступ",None).await.unwrap();
+                            self.bot.send_message(self.message.chat.id,"Подпишитесь на наш телеграм канал (@gptkids), чтобы получить доступ").await.unwrap();
                             return
                         }
                     }
@@ -86,7 +88,7 @@ impl MessageHandler{
                     MediaKind::Voice(media)=>{
                         let chat=self.chat.lock().await;
 
-                        let sent_message=self.bot.send_message(chat.id,"Распознаёт речь...",None).await.unwrap();
+                        let sent_message=self.bot.send_message(chat.id,"Распознаёт речь...").await.unwrap();
 
                         let mut buffer=Vec::with_capacity(media.voice.file.size as usize);
 
@@ -96,7 +98,7 @@ impl MessageHandler{
                         text=VoiceTranscription::run(buffer).await;
 
                         self.bot.bot.delete_message(chat.id,sent_message.id).await.unwrap();
-                        self.bot.send_message(chat.id,format!("Вы сказали: \"{}.\"",text),None).await.unwrap();
+                        self.bot.send_message(chat.id,format!("Вы сказали: \"{}.\"",text)).await.unwrap();
                     }
 
                     _=>return

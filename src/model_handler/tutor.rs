@@ -1,6 +1,5 @@
 use crate::{
     synthesize_voice_button,
-    synthesize_voice_keyboard,
     prompt::Prompt,
     openai::OpenAIWrapper,
     resources::Resources,
@@ -11,51 +10,14 @@ use crate::{
     }
 };
 
-
 use teloxide_core::{
+    requests::Requester,
     types::{
         InlineKeyboardMarkup,
         InlineKeyboardButton,
         InlineKeyboardButtonKind
-    }, requests::Requester
+    }
 };
-
-
-
-const MATH_GREETING:&'static str="\
-Математика - царица наук, благодаря инструментам которой, функционируют и другие, точные науки. \
-Она пригодится тебе всегда и везде, чтобы ни говорили люди вокруг о ней.
-С чего начнем изучение математики? \
-Могу тебе помочь объяснить решение некоторых задач.\
-";
-
-const ENGLISH_GREETING:&'static str="\
-Hi there! Очень рад твоим стремлениям к изучениям языков! \
-Мы живем на одной большой Планете, однако история сложилась так, что в мире существуют более 7 тысяч языков, которые относятся к 142 языковым группам. \
-Английский по праву язык мира, так как распространен в большинстве стран. \
-Также и Я, твой друг, написан языком программирования с использованием команд на английском языке!
-Ну что же, Lets go!\
-";
-
-const FINANCE_GREETING:&'static str="\
-Ты выбрал финасовую граммотность. Давай начнём. Напиши что-нибудь\
-";
-
-const ASTRONOMY_GREETING:&'static str="\
-Прекрасно! Наверное, ничто не придавало столько энтузиазма в изучении науки, как изучение космоса. \
-Человек всегда стремился к звездам, изучению планет, космических объектов. \
-Человек ступил на Луну и уже сегодня готовятся миссии на ближайшие планеты Солнечной системы.
-
-Напиши, что ты хочешь узнать из раздела астрономии, о юный исследователь.\
-";
-
-const ENVIROMENT_GREETING:&'static str="\
-Ты выбрал окружающий мир. Давай начнём. Напиши что-нибудь\
-";
-
-const SELF_CARE_GREETING:&'static str="\
-Ты выбрал здоровье и гигиена. Давай начнём. Напиши что-нибудь\
-";
 
 
 
@@ -105,7 +67,7 @@ impl<'c> TutorHandler<'c>{
             "reset"=>{
                 self.chat.data.tutor().history.clear();
 
-                self.bot.send_message(self.chat.id,"История очищена",None).await.unwrap();
+                self.bot.send_message(self.chat.id,"История очищена").reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             _=>{}
@@ -117,49 +79,59 @@ impl<'c> TutorHandler<'c>{
 
         data.history.clear();
 
-        match callback{
+        let greeting=match callback{
             "tutor"=>{
                 let greeting=Resources::load_text("resources/text/study/tutor/greeting.txt").await;
 
-                self.bot.send_message(self.chat.id,&greeting,Some(tutor_buttons())).await.unwrap();
+                self.bot.send_message(self.chat.id,greeting).reply_markup(tutor_buttons()).await.unwrap();
+
+                return
             }
 
             "math"=>{
                 data.mode=TutorMode::Math;
-                self.bot.send_message(self.chat.id,MATH_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
+
+                Resources::load_text("resources/text/study/tutor/math/greeting.txt").await
             }
 
             "english"=>{
                 data.mode=TutorMode::English;
-                self.bot.send_message(self.chat.id,ENGLISH_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
+
+                Resources::load_text("resources/text/study/tutor/english/greeting.txt").await
             }
 
             "finance"=>{
                 data.mode=TutorMode::Finance;
-                self.bot.send_message(self.chat.id,FINANCE_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
+
+                Resources::load_text("resources/text/study/tutor/finance/greeting.txt").await
             }
 
             "astronomy"=>{
                 data.mode=TutorMode::Astronomy;
-                self.bot.send_message(self.chat.id,ASTRONOMY_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
+
+                Resources::load_text("resources/text/study/tutor/astronomy/greeting.txt").await
             }
 
             "enviroment"=>{
                 data.mode=TutorMode::Enviroment;
-                self.bot.send_message(self.chat.id,ENVIROMENT_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
+
+                Resources::load_text("resources/text/study/tutor/enviroment/greeting.txt").await
             }
 
             "selfcare"=>{
                 data.mode=TutorMode::SelfCare;
-                self.bot.send_message(self.chat.id,SELF_CARE_GREETING,Some(synthesize_voice_keyboard(None))).await.unwrap();
+
+                Resources::load_text("resources/text/study/tutor/selfcare/greeting.txt").await
             }
 
-            _=>{}
-        }
+            _=>return
+        };
+
+        self.bot.send_message(self.chat.id,greeting).reply_markup(synthesize_voice_button(None)).await.unwrap();
     }
 
     pub async fn handle_message(&mut self,message:&str){
-        let sent_message=self.bot.send_message(self.chat.id,"Набирает сообщение...",None).await.unwrap();
+        let sent_message=self.bot.send_message(self.chat.id,"Набирает сообщение...").reply_markup(synthesize_voice_button(None)).await.unwrap();
 
         let mut messages=Vec::new();
 
@@ -209,12 +181,12 @@ impl<'c> TutorHandler<'c>{
 
         let response=OpenAIWrapper::send_chat(&messages,1024).await;
 
-        self.chat.user.tokens_used+=response.usage;
+        self.chat.user.token_usage.total+=response.usage;
 
         data.history.push_response(&response.message);
 
         self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
-        self.bot.send_message(self.chat.id,response.message,Some(synthesize_voice_keyboard(None))).await.unwrap();
+        self.bot.send_message(self.chat.id,response.message).reply_markup(synthesize_voice_button(None)).await.unwrap();
     }
 }
 

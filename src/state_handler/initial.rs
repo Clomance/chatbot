@@ -2,7 +2,6 @@ use crate::{
     model_handler::ChatHandler,
     synthesize_voice_button,
     resources::Resources,
-    synthesize_voice_keyboard,
     extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
@@ -12,8 +11,7 @@ use crate::{
 
 use teloxide_core::types::{
     InlineKeyboardButton,
-    InlineKeyboardButtonKind,
-    InlineKeyboardMarkup
+    InlineKeyboardButtonKind
 };
 
 
@@ -54,14 +52,14 @@ impl<'c> InitialState<'c>{
 
                 let greeting=Resources::load_text("resources/text/general/start/greeting.txt").await;
 
-                self.bot.send_message(self.chat.id,greeting,Some(InlineKeyboardMarkup{inline_keyboard:vec![vec![start,voice]]})).await.unwrap();
+                self.bot.send_message(self.chat.id,greeting).reply_markup(vec![start,voice]).await.unwrap();
             }
 
             // Сообщение при для других команд
             _=>{
                 let access_denied=Resources::load_text("resources/text/general/access_denied.txt").await;
 
-                self.bot.send_message(self.chat.id,access_denied,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,access_denied).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
         }
     }
@@ -79,6 +77,6 @@ impl<'c> InitialState<'c>{
     }
 
     pub async fn handle_message(self,_message:&str){
-        self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать",None).await.unwrap();
+        self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").await.unwrap();
     }
 }

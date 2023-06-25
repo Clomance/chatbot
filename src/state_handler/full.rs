@@ -1,7 +1,6 @@
 use crate::{
     resources::Resources,
     synthesize_voice_button,
-    synthesize_voice_keyboard,
     extended_bot_interface::ExtendedBotInterface,
     chat::{
         ChatMode,
@@ -21,7 +20,6 @@ use crate::{
 
 
 use teloxide_core::types::{
-    ReplyMarkup,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardButtonKind
@@ -49,7 +47,7 @@ impl<'c> FullState<'c>{
                 if let ChatMode::Chat=self.chat.mode{
                     let the_chosen_mode_is_the_current=Resources::load_text("resources/text/general/the_chosen_mode_is_the_current.txt").await;
 
-                    self.bot.send_message(self.chat.id,the_chosen_mode_is_the_current,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                    self.bot.send_message(self.chat.id,the_chosen_mode_is_the_current).reply_markup(synthesize_voice_button(None)).await.unwrap();
                 }
                 else{
                     self.chat.set_mode(ChatMode::Chat);
@@ -62,9 +60,7 @@ impl<'c> FullState<'c>{
             "study"=>{
                 self.chat.set_mode(ChatMode::Study(StudyMode::None));
 
-                let mut send_message=self.bot.send_message(self.chat.id,"Выбери режим",None);
-                send_message.reply_markup=Some(ReplyMarkup::InlineKeyboard(study_buttons()));
-                send_message.await.unwrap();
+                self.bot.send_message(self.chat.id,"Выбери режим").reply_markup(study_buttons()).await.unwrap();
             }
 
             // Перейти в раздел 'Игры'
@@ -84,7 +80,7 @@ impl<'c> FullState<'c>{
                 if let ChatMode::Playground=self.chat.mode{
                     let the_chosen_mode_is_the_current=Resources::load_text("resources/text/general/the_chosen_mode_is_the_current.txt").await;
 
-                    self.bot.send_message(self.chat.id,the_chosen_mode_is_the_current,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                    self.bot.send_message(self.chat.id,the_chosen_mode_is_the_current).reply_markup(synthesize_voice_button(None)).await.unwrap();
                 }
                 else{
                     self.chat.set_mode(ChatMode::Playground);
@@ -97,7 +93,7 @@ impl<'c> FullState<'c>{
             "settings"=>{
                 let not_avaiable=Resources::load_text("resources/text/general/not_avaiable.txt").await;
 
-                self.bot.send_message(self.chat.id,not_avaiable,Some(synthesize_voice_keyboard(None))).await.unwrap();
+                self.bot.send_message(self.chat.id,not_avaiable).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }
 
             // Перейти в раздел 'Профиль'
@@ -189,7 +185,7 @@ impl<'c> FullState<'c>{
                 StudyMode::Homework=>HomeworkHandler::new(self.bot,self.chat).handle_message(&text).await,
             }
 
-            ChatMode::Game=>GameHandler::new(self.bot,self.chat).handle_message(&text).await,
+            ChatMode::Game=>GameHandler::new(self.bot,self.chat).handle_message(text).await,
 
             ChatMode::Playground=>PlaygroundHandler::new(self.bot,self.chat).handle_message(&text).await,
 

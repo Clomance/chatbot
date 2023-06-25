@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{time::Duration, f32::consts::E};
 
 use reqwest::multipart::{
     Form,
@@ -17,11 +17,11 @@ static mut API_KEY:String=String::new();
 
 pub struct Completion{
     pub message:String,
-    pub usage:u64
+    pub usage:u32
 }
 
 impl Completion{
-    pub fn new(message:String,usage:u64)->Completion{
+    pub fn new(message:String,usage:u32)->Completion{
         Self{
             message,
             usage
@@ -140,7 +140,7 @@ impl OpenAI{
         let Some(choices)=payload["choices"].as_array() else {return None};
 
         let message=choices[0]["message"]["content"].as_str().unwrap();
-        let usage=payload["usage"]["total_tokens"].as_i64().unwrap() as u64;
+        let usage=payload["usage"]["total_tokens"].as_i64().unwrap() as u32;
 
         Some(Completion::new(message.to_string(),usage))
     }
@@ -266,13 +266,21 @@ pub struct OpenAIWrapper;
 
 impl OpenAIWrapper{
     pub async fn send_chat<S:AsRef<str>>(messages:&[S],max_tokens:u16)->Completion{
+        let mut repeats=0;
+
         loop{
             if let Some(response)=OpenAI::send_chat(&messages,max_tokens).await{
                 break response
             }
             println!("Ошибка");
 
-            tokio::time::sleep(Duration::from_millis(1000)).await;
+            if repeats<5{
+                repeats+=1;
+                tokio::time::sleep(Duration::from_millis(1000)).await;
+            }
+            else{
+                break Completion::new(String::new(),0)
+            }
         }
     }
 }

@@ -146,7 +146,7 @@ impl ModeData{
 #[derive(Clone,Copy,Debug)]
 #[repr(u64)]
 pub enum ChatFlag{
-    Admin
+    Admin=1<<0
 }
 
 
@@ -177,14 +177,28 @@ impl ChatFlags{
 
 
 
+pub struct TokenUsage{
+    pub total:u32
+}
+
+impl TokenUsage{
+    pub const fn new()->TokenUsage{
+        Self{
+            total:0
+        }
+    }
+}
+
+
+
 pub struct User{
-    pub tokens_used:u64,
+    pub token_usage:TokenUsage,
 }
 
 impl User{
     pub const fn new()->User{
         Self{
-            tokens_used:0u64
+            token_usage:TokenUsage::new()
         }
     }
 }
