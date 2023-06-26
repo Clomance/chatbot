@@ -58,8 +58,6 @@ impl CommandCallbackHandler{
             ChatKind::Private(_)=>{
                 let MessageKind::Common(message)=self.message.kind else {return};
 
-                let mut chat=self.chat.lock().await;
-
                 if !self.chat.lock().await.is_admin(){
                     if let Some(user)=message.from{
                         if !NewsSubscriptionCheck::check(&self.bot,user.id).await{
@@ -71,6 +69,8 @@ impl CommandCallbackHandler{
                         return
                     }
                 }
+
+                let mut chat=self.chat.lock().await;
 
                 match self.callback.as_str(){
                     "synthesize"=>{

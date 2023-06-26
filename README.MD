@@ -18,6 +18,11 @@ Run `cargo run` for testing.
 
 Run `cargo run --release` for production.
 
+To run on a new thread - `nohup cargo run --release &`.
+
+To kill the thread - `kill -9 [procid]`.
+
+To check `[procid]` use `ps -A` or `pidof [procname]`.
 
 ## Settings
 
