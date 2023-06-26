@@ -103,8 +103,9 @@ async fn save(request_path:PathBuf,token:Option<String>,update:String,cookies:&C
         }
     }
     else{
-        println!("Token: {}",cookies.get("token").unwrap().value());
-        if cookies.get("token").unwrap().value()!="229gdss213sk3jci3cgd4d3fD"{
+        let Some(cookies)=cookies.get("token") else {return None};
+
+        if cookies.value()!="229gdss213sk3jci3cgd4d3fD"{
             return None
         }
     }
@@ -127,7 +128,7 @@ pub struct WebServer{
 impl WebServer{
     pub fn new()->WebServer{
         let config=Config{
-            port: 8080,
+            port:8080,
             address:Ipv4Addr::new(0,0,0,0).into(),
             ..Config::debug_default()
         };

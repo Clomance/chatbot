@@ -1,7 +1,10 @@
 use crate::{
     event_handler::CommandHandler,
-    module::{VoiceTranscription, NewsSubscriptionCheck},
     extended_bot_interface::ExtendedBotInterface,
+    module::{
+        VoiceTranscription,
+        NewsSubscriptionCheck
+    },
     chat::{
         Chat,
         ChatState
@@ -64,6 +67,7 @@ impl MessageHandler{
                     if let Some(user)=message.from{
                         if !NewsSubscriptionCheck::check(&self.bot,user.id).await{
                             self.bot.send_message(self.message.chat.id,"Подпишитесь на наш телеграм канал (@gptkids), чтобы получить доступ").await.unwrap();
+                            return
                         }
                     }
                     else{

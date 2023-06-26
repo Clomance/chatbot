@@ -14,7 +14,9 @@ Probably no additional installation needed, otherwise read the rust compiler out
 
 ## Running
 
-Run `cargo run`.
+Run `cargo run` for testing.
+
+Run `cargo run --release` for production.
 
 
 ## Settings
