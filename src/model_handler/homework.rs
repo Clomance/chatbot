@@ -74,7 +74,7 @@ impl<'c> HomeworkHandler<'c>{
 
         data.history.push_request(message);
 
-        let prompt=Prompt::load("prompts/study/homework/homework.json").await;
+        let prompt=Prompt::load("resources/prompts/study/homework/homework.json").await;
         messages.push(prompt.text);
 
         for message in data.history.messages().iter(){

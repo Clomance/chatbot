@@ -74,7 +74,7 @@ impl<'d> GuessingGame<'d>{
             "guessinggamenew"=>{
                 self.data.history.clear();
 
-                let prompt=Prompt::load("prompts/game/guessing/secret.json").await;
+                let prompt=Prompt::load("resources/prompts/game/guessing/secret.json").await;
 
                 let response=OpenAIWrapper::send_chat(&vec![prompt.text],1024).await;
 
@@ -85,6 +85,10 @@ impl<'d> GuessingGame<'d>{
                 self.user.token_usage.total+=response.usage;
 
                 self.bot.send_message(self.chat_id,"Я загадал слово. Попробуй его отгадать").reply_markup(synthesize_voice_button(None)).await.unwrap();
+            }
+
+            "guessinggametip"=>{
+                self.handle_message("Дай подсказку".to_string()).await
             }
 
             _=>{}
@@ -100,7 +104,7 @@ impl<'d> GuessingGame<'d>{
 
             let mut messages=Vec::new();
 
-            let mut prompt=Prompt::load("prompts/game/guessing/guess.json").await;
+            let mut prompt=Prompt::load("resources/prompts/game/guessing/guess.json").await;
             prompt.replace("{secret}",&self.data.secret);
 
             messages.push(prompt.text);
@@ -130,7 +134,12 @@ impl<'d> GuessingGame<'d>{
             else{
                 self.data.history.push_response(&response.message);
 
-                self.bot.send_message(self.chat_id,message).reply_markup(synthesize_voice_button(None)).await.unwrap();
+                let tip_button=InlineKeyboardButton::new(
+                    "Подсказка",
+                    InlineKeyboardButtonKind::CallbackData("guessinggametip".into())
+                );
+
+                self.bot.send_message(self.chat_id,message).reply_markup(vec![tip_button,synthesize_voice_button(None)]).await.unwrap();
             }
         }
     }

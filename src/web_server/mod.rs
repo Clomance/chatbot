@@ -7,6 +7,7 @@ use std::{
 use rocket::{
     routes,
     get,
+    post,
     Rocket,
     Build,
     Config,
@@ -30,8 +31,9 @@ async fn index(request_path:PathBuf,token:Option<String>,cookies:&CookieJar<'_>)
         }
     }
     else{
-        println!("Token: {}",cookies.get("token").unwrap().value());
-        if cookies.get("token").unwrap().value()!="229gdss213sk3jci3cgd4d3fD"{
+        let Some(cookies)=cookies.get("token") else {return None};
+
+        if cookies.value()!="229gdss213sk3jci3cgd4d3fD"{
             return None
         }
     }
@@ -39,17 +41,10 @@ async fn index(request_path:PathBuf,token:Option<String>,cookies:&CookieJar<'_>)
     println!("RequestPath: {request_path:?}");
 
     let mut displayed_path=request_path.to_string_lossy().to_string();
-    let mut path=request_path.clone();
+    let mut path=PathBuf::from("resources");
+    path.push(request_path);
 
-    if path.as_os_str().is_empty(){
-        if let Ok(dir)=std::env::current_dir(){
-            path=dir;
-        }
-        else{
-            return None
-        }
-    }
-    else{
+    if !displayed_path.is_empty(){
         displayed_path.insert(0,'\\');
     }
 
@@ -82,11 +77,45 @@ async fn index(request_path:PathBuf,token:Option<String>,cookies:&CookieJar<'_>)
         let mut formated_text=String::new();
 
         for line in text.lines(){
-            formated_text+=&format!("<div style='height:1em'>{line}</div>")
+            formated_text+=&format!("<div>{line}</div>")
         }
 
-        Some(RawHtml(file_template.replace("{{rust-input}}",&formated_text)))
+        Some(RawHtml(file_template.replace("{{rust-input}}",&text)))
     }
+}
+
+
+#[post("/<request_path..>?<token>",data="<update>")]
+async fn save(request_path:PathBuf,token:Option<String>,update:String,cookies:&CookieJar<'_>)->Option<&'static str>{
+    println!("RequestPath: {request_path:?}");
+
+    let mut path=PathBuf::from("resources");
+    path.push(request_path);
+
+    println!("UpdateData: {update:?}");
+
+    if let Some(token)=&token{
+        if token=="229gdss213sk3jci3cgd4d3fD"{
+            cookies.add(Cookie::new("token","229gdss213sk3jci3cgd4d3fD"));
+        }
+        else{
+            return None
+        }
+    }
+    else{
+        println!("Token: {}",cookies.get("token").unwrap().value());
+        if cookies.get("token").unwrap().value()!="229gdss213sk3jci3cgd4d3fD"{
+            return None
+        }
+    }
+
+    if path.is_file(){
+        if fs::write(&path,update).is_err(){
+            return None
+        }
+    }
+
+    Some("OK")
 }
 
 
@@ -103,7 +132,7 @@ impl WebServer{
             ..Config::debug_default()
         };
 
-        let rocket=rocket::custom(config).mount("/",routes![index]);
+        let rocket=rocket::custom(config).mount("/",routes![index]).mount("/",routes![save]);
 
         Self{
             rocket

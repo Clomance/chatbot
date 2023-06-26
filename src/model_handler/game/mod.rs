@@ -227,7 +227,7 @@ impl<'c> GameHandler<'c>{
                     "insterestingfactscontinue"=>{
                         let sent_message=self.bot.send_message(self.chat.id,"Пишет интересный факт...").await.unwrap();
 
-                        let prompt=Prompt::load("prompts/game/insterestingfacts.json").await;
+                        let prompt=Prompt::load("resources/prompts/game/insterestingfacts.json").await;
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
@@ -250,7 +250,7 @@ impl<'c> GameHandler<'c>{
                     "tonguetwisterscontinue"=>{
                         let sent_message=self.bot.send_message(self.chat.id,"Пишет скороговорку...").await.unwrap();
 
-                        let prompt=Prompt::load("prompts/game/tonguetwisters.json").await;
+                        let prompt=Prompt::load("resources/prompts/game/tonguetwisters.json").await;
 
                         let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
@@ -270,7 +270,7 @@ impl<'c> GameHandler<'c>{
                         if *random{
                             let sent_message=self.bot.send_message(self.chat.id,"Пишет сказку...").await.unwrap();
 
-                            let prompt=Prompt::load("prompts/game/fairytales.json").await;
+                            let prompt=Prompt::load("resources/prompts/game/fairytales.json").await;
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
@@ -285,7 +285,7 @@ impl<'c> GameHandler<'c>{
                         else{
                             let sent_message=self.bot.send_message(self.chat.id,"Пишет сказку...").await.unwrap();
 
-                            let mut prompt=Prompt::load("prompts/game/themedfairytales.json").await;
+                            let mut prompt=Prompt::load("resources/prompts/game/themedfairytales.json").await;
                             prompt.replace("{theme}",&theme);
 
                             let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
@@ -308,7 +308,7 @@ impl<'c> GameHandler<'c>{
 
                         let theme_reset=Resources::load_text("resources/text/game/fairy_tales/theme_reset.txt").await;
 
-                        self.bot.send_message(self.chat.id,theme_reset).reply_markup(synthesize_voice_button(None)).await.unwrap();
+                        self.bot.send_message(self.chat.id,theme_reset).reply_markup(fairy_tales_start_keyboard()).await.unwrap();
                     }
 
                     _=>{}

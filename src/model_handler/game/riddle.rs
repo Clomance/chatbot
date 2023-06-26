@@ -52,7 +52,7 @@ impl<'c> RiddleGame<'c>{
             "riddlegamecontinue"=>{
                 let sent_message=self.bot.send_message(self.chat.id,"Пишет загадку...").await.unwrap();
 
-                let prompt=Prompt::load("prompts/game/riddle/riddle.json").await;
+                let prompt=Prompt::load("resources/prompts/game/riddle/riddle.json").await;
 
                 let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
 
@@ -82,7 +82,7 @@ impl<'c> RiddleGame<'c>{
         else{
             let sent_message=self.bot.send_message(self.chat.id,"Думает...").await.unwrap();
 
-            let mut prompt=Prompt::load("prompts/game/riddle/guess.json").await;
+            let mut prompt=Prompt::load("resources/prompts/game/riddle/guess.json").await;
 
             prompt.replace("{riddle}",&riddle);
             prompt.replace("{answer}",&answer);

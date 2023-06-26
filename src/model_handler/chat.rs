@@ -78,7 +78,7 @@ impl<'c> ChatHandler<'c>{
 
         let data=self.chat.data.chat();
 
-        let prompt=Prompt::load("prompts/chat.json").await;
+        let prompt=Prompt::load("resources/prompts/chat.json").await;
         messages.push(prompt.text);
 
         data.history.push_request(message);

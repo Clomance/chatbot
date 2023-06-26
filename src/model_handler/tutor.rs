@@ -143,32 +143,32 @@ impl<'c> TutorHandler<'c>{
             }
 
             TutorMode::Math=>{
-                let prompt=Prompt::load("prompts/study/tutor/math.json").await;
+                let prompt=Prompt::load("resources/prompts/study/tutor/math.json").await;
                 messages.push(prompt.text)
             }
 
             TutorMode::English=>{
-                let prompt=Prompt::load("prompts/study/tutor/english.json").await;
+                let prompt=Prompt::load("resources/prompts/study/tutor/english.json").await;
                 messages.push(prompt.text)
             }
 
             TutorMode::Finance=>{
-                let prompt=Prompt::load("prompts/study/tutor/finance.json").await;
+                let prompt=Prompt::load("resources/prompts/study/tutor/finance.json").await;
                 messages.push(prompt.text)
             }
 
             TutorMode::Astronomy=>{
-                let prompt=Prompt::load("prompts/study/tutor/astronomy.json").await;
+                let prompt=Prompt::load("resources/prompts/study/tutor/astronomy.json").await;
                 messages.push(prompt.text)
             }
 
             TutorMode::Enviroment=>{
-                let prompt=Prompt::load("prompts/study/tutor/enviroment.json").await;
+                let prompt=Prompt::load("resources/prompts/study/tutor/enviroment.json").await;
                 messages.push(prompt.text)
             }
 
             TutorMode::SelfCare=>{
-                let prompt=Prompt::load("prompts/study/tutor/selfcare.json").await;
+                let prompt=Prompt::load("resources/prompts/study/tutor/selfcare.json").await;
                 messages.push(prompt.text)
             }
         }

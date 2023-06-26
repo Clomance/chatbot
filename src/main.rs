@@ -26,6 +26,7 @@ mod state_handler;
 mod prompt;
 
 mod web_server;
+use web_server::WebServer;
 
 use std::{
     sync::Arc,
@@ -47,8 +48,6 @@ use tokio::sync::RwLock;
 
 use serde_json::Value;
 
-use crate::web_server::WebServer;
-
 
 
 #[tokio::main]
@@ -61,7 +60,13 @@ async fn main(){
     ).expect("Wrong settings format");
 
     // Получение и установка токена телеграм-бота
-    let bot=ExtendedBotInterface::new(settings["TELEGRAM_BOT_TOKEN"].as_str().unwrap()); // 5743583697:AAENl1sDvgMD0DCdEuQmqAmFBvtVrw0vgX0
+    let field=if cfg!(debug_assertions){
+        "TELEGRAM_TEST_BOT_TOKEN"
+    }
+    else{
+        "TELEGRAM_BOT_TOKEN"
+    };
+    let bot=ExtendedBotInterface::new(settings[field].as_str().unwrap());
 
     // Получение и установка ключа для интерфейса OpenAI
     OpenAI::set_token(settings["OPENAI_API_KEY"].as_str().unwrap());
