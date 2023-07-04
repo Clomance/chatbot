@@ -25,6 +25,8 @@ use teloxide_core::types::{
     InlineKeyboardButtonKind
 };
 
+use super::InitialState;
+
 
 
 pub struct FullState<'c>{
@@ -41,7 +43,23 @@ impl<'c> FullState<'c>{
     }
 
     pub async fn handle_command(self,command:&str){
+        let mut command_split=command.split_whitespace();
+
+        let Some(command)=command_split.next()else{return};
+
+        if command.starts_with("start"){
+            *self.chat=Chat::new(self.chat.id);
+
+            InitialState::new(self.bot,self.chat).handle_command(command).await;
+
+            return
+        }
+
         match command{
+            "restart"=>{
+                *self.chat=Chat::new(self.chat.id)
+            }
+
             // Перейти в раздел 'Простое общение'
             "chat"=>{
                 if let ChatMode::Chat=self.chat.mode{
