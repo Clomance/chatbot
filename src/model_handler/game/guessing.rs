@@ -1,9 +1,12 @@
 use crate::{
     synthesize_voice_button,
-    chat::{History, User},
     extended_bot_interface::ExtendedBotInterface,
     prompt::Prompt,
-    openai::OpenAIWrapper
+    openai::OpenAIWrapper,
+    chat::{
+        User,
+        History
+    }
 };
 
 use serde_json::Value;
@@ -20,15 +23,19 @@ use teloxide_core::{
 
 
 
+/// Данные игры "Угадайка".
 pub struct GuessingGameData{
+    /// Загаданное слово.
     secret:String,
+
+    /// История чата.
     history:History
 }
 
 impl GuessingGameData{
-    pub fn new(secret:&str)->GuessingGameData{
+    pub fn new()->GuessingGameData{
         Self{
-            secret:String::from(secret),
+            secret:String::new(),
             history:History::new()
         }
     }
@@ -44,7 +51,12 @@ pub struct GuessingGame<'d>{
 }
 
 impl<'d> GuessingGame<'d>{
-    pub fn new(bot:ExtendedBotInterface,chat_id:ChatId,user:&'d mut User,data:&'d mut GuessingGameData)->GuessingGame<'d>{
+    pub fn new(
+        bot:ExtendedBotInterface,
+        chat_id:ChatId,
+        user:&'d mut User,
+        data:&'d mut GuessingGameData
+    )->GuessingGame<'d>{
         Self{
             bot,
             chat_id,
@@ -74,8 +86,10 @@ impl<'d> GuessingGame<'d>{
             "guessinggamenew"=>{
                 self.data.history.clear();
 
+                // Загрузка запроса
                 let prompt=Prompt::load("resources/prompts/game/guessing/secret.json").await;
 
+                // Отправка запроса нейтросети
                 let response=OpenAIWrapper::send_chat(&vec![prompt.text],1024).await;
 
                 let message:Value=serde_json::from_str(&response.message).unwrap();

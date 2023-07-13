@@ -1,25 +1,22 @@
-use crate::{
+use crate::{    
     synthesize_voice_button,
+    keyboard::build_inline_keyboard,
     resources::Resources,
     extended_bot_interface::ExtendedBotInterface,
-    prompt::Prompt,
-    openai::OpenAIWrapper,
     chat::{
         Chat,
         History
-    }
+    },
 };
 
 mod riddle;
 use riddle::{
-    RiddleGame
+    RiddleGame,
+    RiddleGameData
 };
 
 mod interecting_facts;
-use interecting_facts::{
-    interecting_facts_start_keyboard,
-    interecting_facts_continue_keyboard
-};
+use interecting_facts::InterestingFacts;
 
 mod guessing;
 use guessing::{
@@ -28,76 +25,33 @@ use guessing::{
 };
 
 mod tongue_twisters;
-use tongue_twisters::{
-    tongue_twisters_start_keyboard,
-    tongue_twisters_continue_keyboard
-};
+use tongue_twisters::TongueTwisters;
 
 mod fairy_tales;
 use fairy_tales::{
-    fairy_tales_start_keyboard,
-    fairy_tales_continue_keyboard,
-    themed_fairy_tales_start_keyboard,
-    themed_fairy_tales_continue_keyboard
+    FairyTales,
+    FairyTalesData
 };
 
-use teloxide_core::{
-    requests::Requester,
-    types::{
-        InlineKeyboardMarkup,
-        InlineKeyboardButton,
-        InlineKeyboardButtonKind
-    }
-};
+mod quiz;
+use quiz::QuizGame;
 
 
 
 pub enum GameMode{
     None,
 
-    RiddleGame{
-        riddle:String,
-        answer:String
-    },
+    RiddleGame(RiddleGameData),
 
-    InsterestingFacts,
+    InterestingFacts,
 
-    QuizGame{
-        quiz:String
-    },
+    QuizGame,
 
     GuessingGame(GuessingGameData),
 
     TongueTwisters,
 
-    FairyTales{
-        theme:String,
-        random:bool
-    }
-}
-
-impl GameMode{
-    pub fn riddle(riddle:&str,answer:&str)->GameMode{
-        GameMode::RiddleGame{
-            riddle:String::from(riddle),
-            answer:String::from(answer)
-        }
-    }
-
-    pub fn quiz(quiz:&str)->GameMode{
-        GameMode::QuizGame{quiz:String::from(quiz)}
-    }
-
-    pub fn guessing(secret:&str)->GameMode{
-        GameMode::GuessingGame(GuessingGameData::new(secret))
-    }
-
-    pub fn fairy_tales(theme:&str,random:bool)->GameMode{
-        GameMode::FairyTales{
-            theme:String::from(theme),
-            random
-        }
-    }
+    FairyTales(FairyTalesData)
 }
 
 
@@ -138,7 +92,7 @@ impl<'c> GameHandler<'c>{
 
                 let greeting=Resources::load_text("resources/text/game/greeting.txt").await;
 
-                self.bot.send_message(self.chat.id,greeting).reply_markup(game_buttons()).await.unwrap();
+                self.bot.send_message(self.chat.id,greeting).reply_markup(build_inline_keyboard("resources/keyboard/game.js")).await.unwrap();
             }
 
             "gamerepeat"=>{
@@ -146,7 +100,7 @@ impl<'c> GameHandler<'c>{
 
                 let menu=Resources::load_text("resources/text/game/menu.txt").await;
 
-                self.bot.send_message(self.chat.id,menu).reply_markup(game_buttons()).await.unwrap();
+                self.bot.send_message(self.chat.id,menu).reply_markup(build_inline_keyboard("resources/keyboard/game.js")).await.unwrap();
             }
 
             "reset"=>{
@@ -172,148 +126,66 @@ impl<'c> GameHandler<'c>{
             GameMode::None=>match callback{
                 // При выборе режима "Загадки"
                 "riddlegamestart"=>{
-                    data.mode=GameMode::riddle("","");
+                    let mut riddle_game_data=RiddleGameData::new();
 
-                    RiddleGame::new(self).handle_command_callback(callback).await;
+                    RiddleGame::new(self.bot,self.chat.id,&mut self.chat.user,&mut riddle_game_data).handle_command_callback(callback).await;
+
+                    data.mode=GameMode::RiddleGame(riddle_game_data);
                 }
 
                 // При выборе режима "Интересные факты"
-                "insterestingfactsstart"=>{
-                    data.mode=GameMode::InsterestingFacts;
+                "interestingfactsstart"=>{
+                    InterestingFacts::new(self.bot,self.chat.id,&mut self.chat.user).handle_command_callback(callback).await;
 
-                    let greeting=Resources::load_text("resources/text/game/insteresting_facts/greeting.txt").await;
-
-                    self.bot.send_message(self.chat.id,greeting).reply_markup(interecting_facts_start_keyboard()).await.unwrap();
+                    data.mode=GameMode::InterestingFacts;
                 }
 
                 // При выборе режима "Викторина"
                 "quizgamestart"=>{
-                    data.mode=GameMode::quiz("");
+                    QuizGame::new(self.bot,self.chat.id,&mut self.chat.user).handle_command_callback(callback).await;
 
-                    self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").await.unwrap();
+                    data.mode=GameMode::None;
                 }
 
                 // При выборе режима "Угадайка"
                 "guessinggamestart"=>{
-                    data.mode=GameMode::guessing("");
+                    let mut guessing_game_data=GuessingGameData::new();
 
-                    if let GameMode::GuessingGame(data)=&mut data.mode{
-                        GuessingGame::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_command_callback(callback).await
-                    }
+                    GuessingGame::new(self.bot,self.chat.id,&mut self.chat.user,&mut guessing_game_data).handle_command_callback(callback).await;
+
+                    data.mode=GameMode::GuessingGame(guessing_game_data);
                 }
 
                 // При выборе режима "Скороговорки"
                 "tonguetwistersstart"=>{
-                    data.mode=GameMode::TongueTwisters;
+                    TongueTwisters::new(self.bot,self.chat.id,&mut self.chat.user).handle_command_callback(callback).await;
 
-                    self.bot.send_message(self.chat.id,"Ты выбрал скороговорки. Давай начнём. Нажми кнопку").reply_markup(tongue_twisters_start_keyboard()).await.unwrap();
+                    data.mode=GameMode::TongueTwisters;
                 }
 
                 // При выборе режима "Сказки"
                 "fairytalesstart"=>{
-                    data.mode=GameMode::fairy_tales("",true);
+                    let mut fairy_tales_data=FairyTalesData::new();
 
-                    self.bot.send_message(self.chat.id,"Ты выбрал сказки. Давай начнём. Нажми кнопку").reply_markup(fairy_tales_start_keyboard()).await.unwrap();
+                    FairyTales::new(self.bot,self.chat.id,&mut self.chat.user,&mut fairy_tales_data).handle_command_callback(callback).await;
+
+                    data.mode=GameMode::FairyTales(fairy_tales_data);
                 }
 
                 _=>{}
             }
 
-            GameMode::RiddleGame{..}=>RiddleGame::new(self).handle_command_callback(callback).await,
+            GameMode::RiddleGame(data)=>RiddleGame::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_command_callback(callback).await,
 
-            GameMode::InsterestingFacts=>{
-                match callback{
-                    // При нажатии на кнопку "Интересный факт"
-                    "insterestingfactscontinue"=>{
-                        let sent_message=self.bot.send_message(self.chat.id,"Пишет интересный факт...").await.unwrap();
+            GameMode::InterestingFacts=>InterestingFacts::new(self.bot,self.chat.id,&mut self.chat.user).handle_command_callback(callback).await,
 
-                        let prompt=Prompt::load("resources/prompts/game/insterestingfacts.json").await;
-
-                        let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
-
-                        self.chat.user.token_usage.total+=response.usage;
-
-                        self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
-                        self.bot.send_message(self.chat.id,response.message).reply_markup(interecting_facts_continue_keyboard()).await.unwrap();
-                    }
-
-                    _=>{}
-                }
-            }
-
-            GameMode::QuizGame{..}=>{}
+            GameMode::QuizGame=>QuizGame::new(self.bot,self.chat.id,&mut self.chat.user).handle_command_callback(callback).await,
 
             GameMode::GuessingGame(data)=>GuessingGame::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_command_callback(callback).await,
 
-            GameMode::TongueTwisters=>{
-                match callback{
-                    "tonguetwisterscontinue"=>{
-                        let sent_message=self.bot.send_message(self.chat.id,"Пишет скороговорку...").await.unwrap();
+            GameMode::TongueTwisters=>TongueTwisters::new(self.bot,self.chat.id,&mut self.chat.user).handle_command_callback(callback).await,
 
-                        let prompt=Prompt::load("resources/prompts/game/tonguetwisters.json").await;
-
-                        let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
-
-                        self.chat.user.token_usage.total+=response.usage;
-
-                        self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
-                        self.bot.send_message(self.chat.id,response.message).reply_markup(tongue_twisters_continue_keyboard()).await.unwrap();
-                    }
-
-                    _=>{}
-                }
-            }
-
-            GameMode::FairyTales{theme,random}=>{
-                match callback{
-                    "fairytalescontinue"=>{
-                        if *random{
-                            let sent_message=self.bot.send_message(self.chat.id,"Пишет сказку...").await.unwrap();
-
-                            let prompt=Prompt::load("resources/prompts/game/fairytales.json").await;
-
-                            let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
-
-                            self.chat.user.token_usage.total+=response.usage;
-
-                            self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
-                            self.bot.send_message(self.chat.id,response.message).reply_markup(fairy_tales_continue_keyboard()).await.unwrap();
-                        }
-                        else if theme.is_empty(){
-                            self.bot.send_message(self.chat.id,"Напиши тему").reply_markup(synthesize_voice_button(None)).await.unwrap();
-                        }
-                        else{
-                            let sent_message=self.bot.send_message(self.chat.id,"Пишет сказку...").await.unwrap();
-
-                            let mut prompt=Prompt::load("resources/prompts/game/themedfairytales.json").await;
-                            prompt.replace("{theme}",&theme);
-
-                            let response=OpenAIWrapper::send_chat(&[prompt.text],1024).await;
-
-                            self.chat.user.token_usage.total+=response.usage;
-
-                            self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
-                            self.bot.send_message(self.chat.id,response.message).reply_markup(themed_fairy_tales_continue_keyboard()).await.unwrap();
-                        }
-                    }
-
-                    "fairytalesnewtheme"=>{
-                        data.mode=GameMode::fairy_tales("",false);
-
-                        self.bot.send_message(self.chat.id,"Напиши тему").reply_markup(synthesize_voice_button(None)).await.unwrap();
-                    }
-
-                    "fairytalesresettheme"=>{
-                        data.mode=GameMode::fairy_tales("",true);
-
-                        let theme_reset=Resources::load_text("resources/text/game/fairy_tales/theme_reset.txt").await;
-
-                        self.bot.send_message(self.chat.id,theme_reset).reply_markup(fairy_tales_start_keyboard()).await.unwrap();
-                    }
-
-                    _=>{}
-                }
-            }
+            GameMode::FairyTales(data)=>FairyTales::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_command_callback(callback).await,
         }
     }
 
@@ -321,86 +193,17 @@ impl<'c> GameHandler<'c>{
         match &mut self.chat.data.game().mode{
             GameMode::None=>{}
 
-            GameMode::RiddleGame{ref mut riddle,ref mut answer}=>{
-                let riddle=riddle.clone();
-                let answer=answer.clone();
-                RiddleGame::new(self).handle_message(riddle,answer,&message).await;
-            }
+            GameMode::RiddleGame(data)=>RiddleGame::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_message(message).await,
 
-            GameMode::InsterestingFacts=>{
-                self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы узнать интересный факт").reply_markup(synthesize_voice_button(None)).await.unwrap();
-            }
+            GameMode::InterestingFacts=>InterestingFacts::new(self.bot,self.chat.id,&mut self.chat.user).handle_message(message).await,
 
-            GameMode::QuizGame{..}=>{
-                self.bot.send_message(self.chat.id,"Данный раздел пока не доступен").reply_markup(synthesize_voice_button(None)).await.unwrap();
-            }
+            GameMode::QuizGame=>QuizGame::new(self.bot,self.chat.id,&mut self.chat.user).handle_message(message).await,
 
             GameMode::GuessingGame(data)=>GuessingGame::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_message(message).await,
 
-            GameMode::TongueTwisters=>{
-                self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы получить скороговорку").reply_markup(synthesize_voice_button(None)).await.unwrap();
-            }
+            GameMode::TongueTwisters=>TongueTwisters::new(self.bot,self.chat.id,&mut self.chat.user).handle_message(message).await,
 
-            GameMode::FairyTales{theme,random}=>{
-                if *random{
-                    self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы получить сказку").reply_markup(synthesize_voice_button(None)).await.unwrap();
-                }
-                else if theme.is_empty(){
-                    *theme=message.to_string();
-
-                    let theme_set=Resources::load_text("resources/text/game/fairy_tales/theme_set.txt").await;
-
-                    self.bot.send_message(self.chat.id,theme_set).reply_markup(themed_fairy_tales_start_keyboard()).await.unwrap();
-                }
-                else{
-                    self.bot.send_message(self.chat.id,"Нажми на кнопку, чтобы получить сказку").reply_markup(synthesize_voice_button(None)).await.unwrap();
-                }
-            }
+            GameMode::FairyTales(data)=>FairyTales::new(self.bot,self.chat.id,&mut self.chat.user,data).handle_message(message).await,
         }
-    }
-}
-
-
-
-pub fn game_buttons()->InlineKeyboardMarkup{
-    let riddle_game=InlineKeyboardButton::new(
-        "Загадки",
-        InlineKeyboardButtonKind::CallbackData("riddlegamestart".into())
-    );
-
-    let insteresting_facts=InlineKeyboardButton::new(
-        "Интересные факты",
-        InlineKeyboardButtonKind::CallbackData("insterestingfactsstart".into())
-    );
-
-    let quiz_game=InlineKeyboardButton::new(
-        "Викторина",
-        InlineKeyboardButtonKind::CallbackData("quizgamestart".into())
-    );
-
-    let guessing_game=InlineKeyboardButton::new(
-        "Угадайка",
-        InlineKeyboardButtonKind::CallbackData("guessinggamestart".into())
-    );
-
-    let tongue_twisters=InlineKeyboardButton::new(
-        "Cкороговорки",
-        InlineKeyboardButtonKind::CallbackData("tonguetwistersstart".into())
-    );
-
-    let fairy_tales=InlineKeyboardButton::new(
-        "Cказки",
-        InlineKeyboardButtonKind::CallbackData("fairytalesstart".into())
-    );
-
-    let inline_buttons=vec![
-        vec![synthesize_voice_button(None)],
-        vec![riddle_game,insteresting_facts],
-        vec![quiz_game,guessing_game],
-        vec![tongue_twisters,fairy_tales],
-    ];
-
-    InlineKeyboardMarkup{
-        inline_keyboard:inline_buttons
     }
 }

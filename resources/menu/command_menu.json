@@ -1,0 +1,34 @@
+[
+    {
+        "command": "chat",
+        "description": "Простое общение"
+    },
+    {
+        "command": "study",
+        "description": "Учёба"
+    },
+    {
+        "command": "game",
+        "description": "Игры"
+    },
+    {
+        "command": "playground",
+        "description": "Свободный режим"
+    },
+    {
+        "command": "reset",
+        "description": "Очистить историю"
+    },
+    {
+        "command": "settings",
+        "description": "Настройки"
+    },
+    {
+        "command": "profile",
+        "description": "Профиль"
+    },
+    {
+        "command": "etc",
+        "description": "Дополнительно"
+    }
+]

@@ -15,7 +15,8 @@ use teloxide_core::{
         ChatId,
         InlineKeyboardMarkup,
         ReplyMarkup,
-        InputFile, InlineKeyboardButton
+        InputFile,
+        InlineKeyboardButton
     }
 };
 
@@ -70,7 +71,7 @@ impl ReplyMarkupWrap for ReplyMarkup{
 
 
 pub struct ExtendedSendMessage{
-    inner:JsonRequest<SendMessage>
+    pub inner:JsonRequest<SendMessage>
 }
 
 impl ExtendedSendMessage{
@@ -97,6 +98,7 @@ impl IntoFuture for ExtendedSendMessage{
 
 
 
+/// Расширенная версия интерефейса бота.
 #[derive(Clone)]
 pub struct ExtendedBotInterface{
     pub bot:Bot

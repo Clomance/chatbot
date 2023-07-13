@@ -5,9 +5,7 @@ use reqwest::multipart::{
     Part
 };
 
-use serde_json::{
-    Value
-};
+use serde_json::Value;
 
 
 
@@ -105,7 +103,7 @@ impl OpenAI{
 
         let mut payload=format!("\
             {{\
-                \"model\":\"gpt-3.5-turbo\",\
+                \"model\":\"gpt-4\",\
                 \"max_tokens\":{max_tokens},\
                 \"messages\":[\
         ");

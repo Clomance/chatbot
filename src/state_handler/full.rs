@@ -1,6 +1,6 @@
 use crate::{
-    resources::Resources,
     synthesize_voice_button,
+    resources::Resources,
     extended_bot_interface::ExtendedBotInterface,
     chat::{
         ChatMode,
@@ -17,15 +17,13 @@ use crate::{
     }
 };
 
-
+use super::InitialState;
 
 use teloxide_core::types::{
     InlineKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardButtonKind
 };
-
-use super::InitialState;
 
 
 

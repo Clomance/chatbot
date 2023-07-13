@@ -11,7 +11,10 @@ use crate::{
 
 use teloxide_core::types::{
     InlineKeyboardButton,
-    InlineKeyboardButtonKind
+    InlineKeyboardButtonKind,
+    ReplyMarkup,
+    KeyboardMarkup,
+    KeyboardButton
 };
 
 
@@ -55,7 +58,7 @@ impl<'c> InitialState<'c>{
                 self.bot.send_message(self.chat.id,greeting).reply_markup(vec![start,voice]).await.unwrap();
             }
 
-            // Сообщение при для других команд
+            // Сообщение при для других команд`
             _=>{
                 let access_denied=Resources::load_text("resources/text/general/access_denied.txt").await;
 
@@ -77,6 +80,11 @@ impl<'c> InitialState<'c>{
     }
 
     pub async fn handle_message(self,_message:&str){
-        self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").await.unwrap();
+        let buttons=vec![vec![KeyboardButton::new("hello")]];
+        let mut send_message=self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").inner;
+        send_message.reply_markup=Some(ReplyMarkup::Keyboard(
+            KeyboardMarkup::new(buttons)
+        ));
+        send_message.await.unwrap();
     }
 }
