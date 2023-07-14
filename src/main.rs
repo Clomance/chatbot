@@ -23,10 +23,6 @@ mod module;
 
 mod state_handler;
 
-mod prompt;
-
-mod keyboard;
-
 mod web_server;
 use web_server::WebServer;
 

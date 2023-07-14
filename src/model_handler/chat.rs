@@ -2,9 +2,11 @@ use teloxide_core::requests::Requester;
 
 use crate::{
     synthesize_voice_button,
-    prompt::Prompt,
+    resources::{
+        Resources,
+        Prompt
+    },
     openai::OpenAIWrapper,
-    resources::Resources,
     extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,

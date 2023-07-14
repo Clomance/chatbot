@@ -83,7 +83,7 @@ impl<'c> InitialState<'c>{
         let buttons=vec![vec![KeyboardButton::new("hello")]];
         let mut send_message=self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").inner;
         send_message.reply_markup=Some(ReplyMarkup::Keyboard(
-            KeyboardMarkup::new(buttons)
+            KeyboardMarkup::new(buttons).resize_keyboard(true)
         ));
         send_message.await.unwrap();
     }

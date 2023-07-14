@@ -1,8 +1,10 @@
 use crate::{
     synthesize_voice_button,
     chat::User,
-    prompt::Prompt,
-    resources::Resources,
+    resources::{
+        Resources,
+        Prompt
+    },
     openai::OpenAIWrapper,
     extended_bot_interface::ExtendedBotInterface
 };

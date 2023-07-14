@@ -1,6 +1,6 @@
 use crate::{    
     synthesize_voice_button,
-    keyboard::build_inline_keyboard,
+    resources::build_inline_keyboard,
     resources::Resources,
     extended_bot_interface::ExtendedBotInterface,
     chat::{
