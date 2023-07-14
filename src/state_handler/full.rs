@@ -79,6 +79,18 @@ impl<'c> FullState<'c>{
                 self.bot.send_message(self.chat.id,"Выбери режим").reply_markup(study_buttons()).await.unwrap();
             }
 
+            "studytutor"=>{
+                self.chat.set_mode(ChatMode::Study(StudyMode::Tutor));
+
+                TutorHandler::new(self.bot,self.chat).handle_command_callback("tutor").await
+            }
+
+            "studyhomework"=>{
+                self.chat.set_mode(ChatMode::Study(StudyMode::Homework));
+
+                HomeworkHandler::new(self.bot,self.chat).handle_command_callback("homework").await
+            }
+
             // Перейти в раздел 'Игры'
             "game"=>{
                 if let ChatMode::Game=self.chat.mode{

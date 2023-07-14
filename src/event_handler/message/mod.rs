@@ -84,6 +84,27 @@ impl MessageHandler{
                             }
                             return
                         }
+                        else{
+                            match media.text.as_str(){
+                                "Развивайка \u{1F393}"=>{
+                                    return CommandHandler::new(self.bot,self.chat).handle("studytutor").await
+                                }
+
+                                "Игры \u{26BD}"=>{
+                                    return CommandHandler::new(self.bot,self.chat).handle("game").await
+                                }
+
+                                "Домашка \u{1F4DD}"=>{
+                                    return CommandHandler::new(self.bot,self.chat).handle("studyhomework").await
+                                }
+
+                                "Поговорить с Другом \u{1F466}"=>{
+                                    return CommandHandler::new(self.bot,self.chat).handle("chat").await
+                                }
+
+                                _=>{}
+                            }
+                        }
 
                         text=media.text
                     }

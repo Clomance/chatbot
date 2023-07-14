@@ -80,10 +80,20 @@ impl<'c> InitialState<'c>{
     }
 
     pub async fn handle_message(self,_message:&str){
-        let buttons=vec![vec![KeyboardButton::new("hello")]];
+        let buttons=vec![
+            vec![
+                KeyboardButton::new("Развивайка \u{1F393}"),
+                KeyboardButton::new("Игры \u{26BD}"),
+            ],
+            vec![
+                KeyboardButton::new("Домашка \u{1F4DD}"),
+                KeyboardButton::new("Поговорить с Другом \u{1F466}")
+            ]
+        ];
+
         let mut send_message=self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").inner;
         send_message.reply_markup=Some(ReplyMarkup::Keyboard(
-            KeyboardMarkup::new(buttons).resize_keyboard(true)
+            KeyboardMarkup::new(buttons).resize_keyboard(true).input_field_placeholder("h".to_string()).one_time_keyboard(true)
         ));
         send_message.await.unwrap();
     }
