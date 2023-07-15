@@ -48,7 +48,7 @@ impl UpdateHandler{
                             self.chats.write().await.push(message.chat.id);
                             self.chats.read().await.get(message.chat.id).unwrap()
                         };
-                        CommandCallbackHandler::new(self.bot.clone(),data,message,chat).handle().await;
+                        CommandCallbackHandler::new(self.bot.clone(),data,message,chat,self.chats).handle().await;
                     }
                 }
 
@@ -65,7 +65,7 @@ impl UpdateHandler{
                     self.chats.write().await.push(message.chat.id);
                     self.chats.read().await.get(message.chat.id).unwrap()
                 };
-                MessageHandler::new(self.bot,message,chat).handle().await;
+                MessageHandler::new(self.bot,message,chat,self.chats).handle().await;
             }
 
             _=>{}

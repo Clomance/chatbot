@@ -2,8 +2,38 @@ use serde_json::Value;
 use teloxide_core::types::{
     InlineKeyboardButton,
     InlineKeyboardButtonKind,
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    KeyboardMarkup
 };
+
+
+
+pub fn build_keyboard(path:&str)->KeyboardMarkup{
+    // Загрузка данных
+    let rows:Vec<Value>=serde_json::from_slice(
+        &std::fs::read(path).expect("No such file")
+    ).expect("Wrong file format");
+
+    let mut keyboard=Vec::new();
+    for row in rows{
+        let row=row.as_array().unwrap();
+
+        let mut buttons=Vec::with_capacity(row.len());
+
+        for button in row{
+            let text=button["text"].as_str().unwrap().to_string();
+
+            let button=KeyboardButton::new(text);
+
+            buttons.push(button)
+        }
+
+        keyboard.push(buttons)
+    }
+
+    KeyboardMarkup::new(keyboard)
+}
 
 
 

@@ -7,7 +7,7 @@ use crate::{
     },
     chat::{
         Chat,
-        ChatState
+        ChatState, Chats
     },
     state_handler::{
         InitialState,
@@ -18,7 +18,7 @@ use crate::{
 
 use std::sync::Arc;
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 use teloxide_core::{
     requests::Requester,
@@ -36,15 +36,17 @@ use teloxide_core::{
 pub struct MessageHandler{
     bot:ExtendedBotInterface,
     message:Message,
-    chat:Arc<Mutex<Chat>>
+    chat:Arc<Mutex<Chat>>,
+    chats:Arc<RwLock<Chats>>
 }
 
 impl MessageHandler{
-    pub fn new(bot:ExtendedBotInterface,message:Message,chat:Arc<Mutex<Chat>>)->MessageHandler{
+    pub fn new(bot:ExtendedBotInterface,message:Message,chat:Arc<Mutex<Chat>>,chats:Arc<RwLock<Chats>>)->MessageHandler{
         Self{
             bot,
             message,
-            chat
+            chat,
+            chats
         }
     }
 
@@ -80,26 +82,26 @@ impl MessageHandler{
                         // Проверка на команду
                         if media.text.starts_with("/"){
                             if let Some(command)=media.text.get(1..){
-                                CommandHandler::new(self.bot,self.chat).handle(command).await;
+                                CommandHandler::new(self.bot,self.chat,self.chats).handle(command).await;
                             }
                             return
                         }
                         else{
                             match media.text.as_str(){
                                 "Развивайка \u{1F393}"=>{
-                                    return CommandHandler::new(self.bot,self.chat).handle("studytutor").await
+                                    return CommandHandler::new(self.bot,self.chat,self.chats).handle("studytutor").await
                                 }
 
                                 "Игры \u{26BD}"=>{
-                                    return CommandHandler::new(self.bot,self.chat).handle("game").await
+                                    return CommandHandler::new(self.bot,self.chat,self.chats).handle("game").await
                                 }
 
                                 "Домашка \u{1F4DD}"=>{
-                                    return CommandHandler::new(self.bot,self.chat).handle("studyhomework").await
+                                    return CommandHandler::new(self.bot,self.chat,self.chats).handle("studyhomework").await
                                 }
 
                                 "Поговорить с Другом \u{1F466}"=>{
-                                    return CommandHandler::new(self.bot,self.chat).handle("chat").await
+                                    return CommandHandler::new(self.bot,self.chat,self.chats).handle("chat").await
                                 }
 
                                 _=>{}
@@ -135,7 +137,7 @@ impl MessageHandler{
 
                     ChatState::PartiallyFunctional=>PartitialState::new(self.bot,&mut chat).handle_message(&text).await,
 
-                    ChatState::FullyFunctional=>FullState::new(self.bot,&mut chat).handle_message(&text).await,
+                    ChatState::FullyFunctional=>FullState::new(self.bot,&mut chat,self.chats).handle_message(&text).await,
                 }
             }
 

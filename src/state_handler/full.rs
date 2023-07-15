@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     synthesize_voice_button,
     resources::Resources,
@@ -5,7 +7,7 @@ use crate::{
     chat::{
         ChatMode,
         StudyMode,
-        Chat
+        Chat, Chats
     },
     model_handler::{
         ChatHandler,
@@ -24,19 +26,22 @@ use teloxide_core::types::{
     InlineKeyboardButton,
     InlineKeyboardButtonKind
 };
+use tokio::sync::RwLock;
 
 
 
 pub struct FullState<'c>{
     bot:ExtendedBotInterface,
-    chat:&'c mut Chat
+    chat:&'c mut Chat,
+    chats:Arc<RwLock<Chats>>
 }
 
 impl<'c> FullState<'c>{
-    pub fn new(bot:ExtendedBotInterface,chat:&'c mut Chat)->FullState<'c>{
+    pub fn new(bot:ExtendedBotInterface,chat:&'c mut Chat,chats:Arc<RwLock<Chats>>)->FullState<'c>{
         Self{
             bot,
-            chat
+            chat,
+            chats
         }
     }
 
@@ -48,7 +53,7 @@ impl<'c> FullState<'c>{
         if command.starts_with("start"){
             *self.chat=Chat::new(self.chat.id);
 
-            InitialState::new(self.bot,self.chat).handle_command(command).await;
+            InitialState::new(self.bot,self.chat).handle_command(command,self.chats).await;
 
             return
         }

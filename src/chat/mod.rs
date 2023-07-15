@@ -146,7 +146,8 @@ impl ModeData{
 #[derive(Clone,Copy,Debug)]
 #[repr(u64)]
 pub enum ChatFlag{
-    Admin=1<<0
+    Admin=1<<0,
+    Invited=1<<1
 }
 
 
@@ -184,7 +185,7 @@ pub struct TokenUsage{
 impl TokenUsage{
     pub const fn new()->TokenUsage{
         Self{
-            total:0
+            total:0u32
         }
     }
 }
@@ -193,12 +194,14 @@ impl TokenUsage{
 
 pub struct User{
     pub token_usage:TokenUsage,
+    pub people_invited:u32
 }
 
 impl User{
     pub const fn new()->User{
         Self{
-            token_usage:TokenUsage::new()
+            token_usage:TokenUsage::new(),
+            people_invited:0u32
         }
     }
 }
@@ -242,8 +245,21 @@ impl Chat{
         }
     }
 
+    pub fn set_invited(&mut self,set:bool){
+        if set{
+            self.flags.set(ChatFlag::Invited)
+        }
+        else{
+            self.flags.remove(ChatFlag::Invited)
+        }
+    }
+
     pub fn is_admin(&self)->bool{
         self.flags.is_set(ChatFlag::Admin)
+    }
+
+    pub fn was_invited(&self)->bool{
+        self.flags.is_set(ChatFlag::Invited)
     }
 }
 

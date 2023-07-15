@@ -32,9 +32,21 @@ impl<'c> ProfileHandler<'c>{
                     InlineKeyboardButtonKind::CallbackData("tokensused".into())
                 );
 
+                let invite_url=InlineKeyboardButton::new(
+                    "Пригласить друзей",
+                    InlineKeyboardButtonKind::CallbackData("inviteurl".into())
+                );
+
+                let friends_invited=InlineKeyboardButton::new(
+                    "Приглашено друзей",
+                    InlineKeyboardButtonKind::CallbackData("friendsinvited".into())
+                );
+
                 let inline_buttons=vec![
                     vec![synthesize_voice_button(None)],
-                    vec![token_usage]
+                    vec![token_usage],
+                    vec![invite_url],
+                    vec![friends_invited]
                 ];
 
                 self.bot.send_message(self.chat.id,"Профиль").reply_markup(inline_buttons).await.unwrap();
@@ -48,6 +60,18 @@ impl<'c> ProfileHandler<'c>{
         match callback{
             "tokensused"=>{
                 let text=format!("Использовано токенов: {}",self.chat.user.token_usage.total);
+
+                self.bot.send_message(self.chat.id,text).reply_markup(synthesize_voice_button(None)).await.unwrap();
+            }
+
+            "inviteurl"=>{
+                let text=format!("https://t.me/Gptkids_bot?start={}",self.chat.id);
+
+                self.bot.send_message(self.chat.id,text).await.unwrap();
+            }
+
+            "friendsinvited"=>{
+                let text=format!("Приглашено друзей: {}",self.chat.user.people_invited);
 
                 self.bot.send_message(self.chat.id,text).reply_markup(synthesize_voice_button(None)).await.unwrap();
             }

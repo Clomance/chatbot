@@ -92,7 +92,7 @@ impl<'c> GameHandler<'c>{
 
                 let greeting=Resources::load_text("resources/text/game/greeting.txt").await;
 
-                self.bot.send_message(self.chat.id,greeting).reply_markup(build_inline_keyboard("resources/keyboard/game.js")).await.unwrap();
+                self.bot.send_message(self.chat.id,greeting).reply_markup(build_inline_keyboard("resources/keyboard/inline/game.js")).await.unwrap();
             }
 
             "gamerepeat"=>{
@@ -100,7 +100,7 @@ impl<'c> GameHandler<'c>{
 
                 let menu=Resources::load_text("resources/text/game/menu.txt").await;
 
-                self.bot.send_message(self.chat.id,menu).reply_markup(build_inline_keyboard("resources/keyboard/game.js")).await.unwrap();
+                self.bot.send_message(self.chat.id,menu).reply_markup(build_inline_keyboard("resources/keyboard/inline/game.js")).await.unwrap();
             }
 
             "reset"=>{

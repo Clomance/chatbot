@@ -4,7 +4,7 @@ use crate::{
     extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
-        ChatState,
+        ChatState, Chats,
     },
     state_handler::{
         InitialState,
@@ -15,7 +15,7 @@ use crate::{
 
 use std::sync::Arc;
 
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 use teloxide_core::{
     requests::Requester,
@@ -34,7 +34,8 @@ pub struct CommandCallbackHandler{
     bot:ExtendedBotInterface,
     callback:String,
     message:Message,
-    chat:Arc<Mutex<Chat>>
+    chat:Arc<Mutex<Chat>>,
+    chats:Arc<RwLock<Chats>>
 }
 
 impl CommandCallbackHandler{
@@ -42,13 +43,15 @@ impl CommandCallbackHandler{
         bot:ExtendedBotInterface,
         callback:String,
         message:Message,
-        chat:Arc<Mutex<Chat>>
+        chat:Arc<Mutex<Chat>>,
+        chats:Arc<RwLock<Chats>>
     )->CommandCallbackHandler{
         Self{
             bot,
             callback,
             message,
-            chat
+            chat,
+            chats
         }
     }
 
@@ -95,7 +98,7 @@ impl CommandCallbackHandler{
 
                         ChatState::PartiallyFunctional=>PartitialState::new(self.bot,&mut chat).handle_command_callback(self.callback).await,
 
-                        ChatState::FullyFunctional=>FullState::new(self.bot,&mut chat).handle_command_callback(self.callback).await,
+                        ChatState::FullyFunctional=>FullState::new(self.bot,&mut chat,self.chats).handle_command_callback(self.callback).await,
                     }
                 }
             }
