@@ -56,13 +56,11 @@ impl<'c> InitialState<'c>{
                     ]
                 ];
 
-                let mut send_message=self.bot.send_message(self.chat.id,"Обработка...").inner;
+                let mut send_message=self.bot.send_message(self.chat.id,"Подготовка...").inner;
                 send_message.reply_markup=Some(ReplyMarkup::Keyboard(
                     KeyboardMarkup::new(buttons).resize_keyboard(true).one_time_keyboard(true)
                 ));
-                let sent_message=send_message.await.unwrap();
-
-                self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
+                send_message.await.unwrap();
 
                 if let Some(args)=command_split.next(){
                     println!("Args: {args}");
