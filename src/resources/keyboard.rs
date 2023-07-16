@@ -12,8 +12,8 @@ use teloxide_core::types::{
 pub fn build_keyboard(path:&str)->KeyboardMarkup{
     // Загрузка данных
     let rows:Vec<Value>=serde_json::from_slice(
-        &std::fs::read(path).expect("No such file")
-    ).expect("Wrong file format");
+        &std::fs::read(path).unwrap()
+    ).unwrap();
 
     let mut keyboard=Vec::new();
     for row in rows{
@@ -40,8 +40,8 @@ pub fn build_keyboard(path:&str)->KeyboardMarkup{
 pub fn build_inline_keyboard(path:&str)->InlineKeyboardMarkup{
     // Загрузка данных
     let rows:Vec<Value>=serde_json::from_slice(
-        &std::fs::read(path).expect("No such file")
-    ).expect("Wrong file format");
+        &std::fs::read(path).unwrap()
+    ).unwrap();
 
     let mut keyboard=Vec::new();
     for row in rows{

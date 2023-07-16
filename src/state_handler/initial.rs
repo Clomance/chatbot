@@ -1,7 +1,7 @@
 use crate::{
     model_handler::ChatHandler,
     synthesize_voice_button,
-    resources::{Resources, build_keyboard},
+    resources::Resources,
     extended_bot_interface::ExtendedBotInterface,
     chat::{
         Chat,
@@ -13,12 +13,12 @@ use std::sync::Arc;
 
 use tokio::sync::RwLock;
 
-use teloxide_core::types::{
+use teloxide_core::{types::{
     InlineKeyboardButton,
     InlineKeyboardButtonKind,
     ReplyMarkup,
-    ChatId
-};
+    ChatId, KeyboardButton, KeyboardMarkup
+}, requests::Requester};
 
 
 
@@ -45,6 +45,25 @@ impl<'c> InitialState<'c>{
 
         match command{
             "start"=>{
+                let buttons=vec![
+                    vec![
+                        KeyboardButton::new("Развивайка \u{1F393}"),
+                        KeyboardButton::new("Игры \u{26BD}"),
+                    ],
+                    vec![
+                        KeyboardButton::new("Домашка \u{1F4DD}"),
+                        KeyboardButton::new("Поговорить с Другом \u{1F466}")
+                    ]
+                ];
+
+                let mut send_message=self.bot.send_message(self.chat.id,"Обработка...").inner;
+                send_message.reply_markup=Some(ReplyMarkup::Keyboard(
+                    KeyboardMarkup::new(buttons).resize_keyboard(true).one_time_keyboard(true)
+                ));
+                let sent_message=send_message.await.unwrap();
+
+                self.bot.bot.delete_message(self.chat.id,sent_message.id).await.unwrap();
+
                 if let Some(args)=command_split.next(){
                     println!("Args: {args}");
 
@@ -100,10 +119,6 @@ impl<'c> InitialState<'c>{
     }
 
     pub async fn handle_message(self,_message:&str){
-        let mut send_message=self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").inner;
-        send_message.reply_markup=Some(ReplyMarkup::Keyboard(
-            build_keyboard("resources/keyboard/common/main.js").resize_keyboard(true).one_time_keyboard(true)
-        ));
-        send_message.await.unwrap();
+        self.bot.send_message(self.chat.id,"Напиши /start, чтобы начать").await.unwrap();
     }
 }
